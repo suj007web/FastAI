@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling>=1.24.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "fastai-framework"
+version = "0.1.0"
+description = "AI-native backend framework for RAG API development"
+readme = "readme.md"
+requires-python = ">=3.11"
+authors = [
+  { name = "FastAI Team" }
+]
+dependencies = [
+  "fastapi>=0.111.0",
+  "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "mypy>=1.10.0",
+  "pytest>=8.2.0",
+  "ruff>=0.5.0",
+]
+
+[project.scripts]
+fastai-app = "fastai.app.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/fastai"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+exclude = [".history", ".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unreachable = true
+mypy_path = ["src"]
+files = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-q"
