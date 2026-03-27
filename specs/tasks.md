@@ -280,7 +280,7 @@ Done criteria:
 2. Mounted route returns answer and sources contract.
 
 ### T-006C Validate Sidecar Integration Mode
-Status: [ ]
+Status: [x]
 
 Objective:
 Ensure FastAI can be consumed as an independent HTTP service by external host apps.

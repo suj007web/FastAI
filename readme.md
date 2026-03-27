@@ -160,6 +160,22 @@ FastAI must be non-invasive. Users should integrate based on their constraints, 
 2. Router plugin mode: mount FastAI-provided routes under a path such as /ai.
 3. Sidecar mode: run FastAI as a separate service and call it over HTTP.
 
+Sidecar client call from an external host service:
+
+```python
+import requests
+
+
+def ask_sidecar(query: str) -> dict:
+    response = requests.post(
+        "http://fastai-sidecar:8000/ask",
+        json={"query": query, "debug": False},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()
+```
+
 ## End User Setup Flow (Existing Project)
 The expected setup for a developer integrating into an existing service is:
 
