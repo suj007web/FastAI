@@ -337,7 +337,7 @@ Done criteria:
 2. Index plan supports top-k similarity queries.
 
 ### T-009 Add Alembic Migration Pipeline
-Status: [ ]
+Status: [x]
 
 Objective:
 Version and apply database schema changes.

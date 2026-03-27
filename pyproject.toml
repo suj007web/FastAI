@@ -12,8 +12,10 @@ authors = [
   { name = "FastAI Team" }
 ]
 dependencies = [
+  "alembic>=1.13.2",
   "fastapi>=0.111.0",
   "pgvector>=0.2.5",
+  "psycopg[binary]>=3.1.19",
   "sqlalchemy>=2.0.30",
   "uvicorn>=0.30.0",
 ]

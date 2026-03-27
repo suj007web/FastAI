@@ -191,6 +191,7 @@ Example setup commands:
 pip install fastai-framework
 Copy-Item .env.example .env
 docker compose -f compose/docker-compose.yml up -d --build
+./scripts/migrate.ps1 upgrade head
 Invoke-WebRequest http://localhost:8000/health | Select-Object -Expand Content
 ```
 
