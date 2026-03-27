@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from fastai.app import AppSettings, create_app
+from fastai.app.api import router as api_router
 
 
 def test_create_app_returns_initialized_payload() -> None:
@@ -60,3 +61,48 @@ def test_startup_config_summary_contains_effective_values() -> None:
     assert summary["effective"]["profile"] == "balanced"
     assert summary["effective"]["env"] == "test"
     assert isinstance(summary["overridden_keys"], list)
+
+
+def test_invalid_payload_maps_to_400_error_shape() -> None:
+    app = create_app()
+    client = TestClient(app)
+
+    response = client.post("/ask", json={})
+
+    assert response.status_code == 400
+    payload = response.json()
+    assert payload["code"] == "invalid_request"
+    assert payload["message"] == "Invalid request payload"
+    assert isinstance(payload["request_id"], str)
+    assert payload["request_id"]
+
+
+def test_unhandled_error_maps_to_stable_500_shape(monkeypatch: pytest.MonkeyPatch) -> None:
+    def failing_executor(payload: object) -> object:
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(api_router, "_run_ask", failing_executor)
+
+    app = create_app()
+    client = TestClient(app, raise_server_exceptions=False)
+    response = client.post("/ask", json={"query": "hello"})
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload == {
+        "code": "internal_error",
+        "message": "Internal server error",
+        "request_id": payload["request_id"],
+    }
+    assert isinstance(payload["request_id"], str)
+    assert payload["request_id"]
+
+
+def test_request_id_middleware_preserves_header() -> None:
+    app = create_app()
+    client = TestClient(app)
+
+    response = client.post("/ask", headers={"X-Request-ID": "req-123"}, json={"query": "q"})
+
+    assert response.status_code == 200
+    assert response.headers["X-Request-ID"] == "req-123"

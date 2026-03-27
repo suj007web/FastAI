@@ -175,7 +175,7 @@ Done criteria:
 3. Profile behavior is test-covered.
 
 ### T-005 Implement HTTP API Base Layer
-Status: [ ]
+Status: [x]
 
 Objective:
 Create transport layer with schema validation and error mapping.
