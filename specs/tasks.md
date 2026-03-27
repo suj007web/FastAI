@@ -215,7 +215,7 @@ Done criteria:
 3. Public API is usable from an existing host app without replacing host routing.
 
 ### T-006D Implement FastAI SDK Config Object Facade
-Status: [ ]
+Status: [x]
 
 Objective:
 Expose a developer-first SDK surface that accepts typed config objects.

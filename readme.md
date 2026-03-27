@@ -68,6 +68,48 @@ def ask(query: str):
     return query
 ```
 
+## SDK Usage Examples
+
+Library query call:
+
+```python
+from fastai import FastAI
+
+sdk = FastAI.from_profile("balanced", vector_backend="pgvector", model="gpt-4.1-mini")
+result = sdk.ask("What is the refund policy?")
+print(result["answer"])
+```
+
+Mount FastAI router in host app:
+
+```python
+from fastapi import FastAPI
+from fastai import FastAI, mount_fastai_router
+
+app = FastAPI()
+sdk = FastAI.for_qdrant(
+    url="http://localhost:6333",
+    collection="fastai_chunks",
+    model="gpt-4.1-mini",
+)
+mount_fastai_router(app, sdk=sdk, path="/ai")
+```
+
+Register and call custom AI route:
+
+```python
+from fastai import FastAI
+
+sdk = FastAI()
+
+@sdk.ai_route("/support", name="support")
+def support(query: str) -> str:
+    return f"support: {query}"
+
+reply = sdk.ask("How do I reset password?", route_name="support")
+print(reply)
+```
+
 ## Architecture (Modular Monolith)
 1. App Core: app lifecycle and route registration.
 2. Ingestion Engine: extract, chunk, embed, and index data.
