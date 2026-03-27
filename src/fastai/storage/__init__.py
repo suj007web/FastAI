@@ -10,14 +10,28 @@ from .contracts import (
     VectorQueryMatch,
     VectorStoreAdapter,
 )
+from .models import (
+    DEFAULT_VECTOR_DIMENSION,
+    Base,
+    ChunkModel,
+    DocumentModel,
+    EmbeddingModel,
+    RouteDefinitionModel,
+)
 
 __all__ = [
     "ChunkRecord",
+    "ChunkModel",
     "ChunkRepository",
+    "DEFAULT_VECTOR_DIMENSION",
     "DocumentRecord",
+    "DocumentModel",
     "DocumentRepository",
     "EmbeddingRecord",
+    "EmbeddingModel",
     "EmbeddingRepository",
+    "Base",
+    "RouteDefinitionModel",
     "VectorQueryMatch",
     "VectorStoreAdapter",
 ]

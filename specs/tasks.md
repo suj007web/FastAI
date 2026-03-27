@@ -318,7 +318,7 @@ Done criteria:
 2. Contract-level tests validate required adapter behavior.
 
 ### T-008 Design Initial Database Schema
-Status: [ ]
+Status: [x]
 
 Objective:
 Create schema for documents, chunks, embeddings, and route definitions.

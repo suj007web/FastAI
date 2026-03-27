@@ -13,6 +13,8 @@ authors = [
 ]
 dependencies = [
   "fastapi>=0.111.0",
+  "pgvector>=0.2.5",
+  "sqlalchemy>=2.0.30",
   "uvicorn>=0.30.0",
 ]
 
