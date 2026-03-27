@@ -5,6 +5,73 @@
 2. Do not start a task until all listed dependencies are complete.
 3. Mark each task as done only when all done criteria are satisfied.
 4. If a task fails, resolve blockers before moving ahead.
+5. Preserve non-invasive adoption: implementation must support library, router plugin, and sidecar modes.
+
+## Run Contract (Required Per Task Run)
+Before making changes, record:
+1. Objective for this run (single objective only).
+2. Mode: implement, stabilize, investigate, or cleanup.
+3. Exact commands to run.
+4. Success criteria for this run.
+
+After changes, record:
+1. What changed.
+2. Evidence (command summary and validation results).
+3. Residual risk.
+4. Next safe step.
+
+## Execution Order (Required)
+For each task run, execute this order:
+1. Health checks.
+2. Dependency readiness.
+3. Bootstrap or provisioning.
+4. Feature action.
+5. Verification.
+
+If any step fails, stop and report before continuing.
+
+## Verification Standard (Task Completion Gate)
+A task run is complete only when all are true:
+1. Service health checks pass.
+2. Target action succeeds.
+3. User-visible behavior works.
+4. No new blocking error appears in relevant logs.
+
+## Safety Guardrails (Required)
+1. Never run destructive commands unless explicitly requested.
+2. Do not combine destructive cleanup and feature implementation in one run unless explicitly requested.
+3. If deleting assets, record recovery instructions before deletion.
+4. Do not assume UI-visible state equals backend state; verify both.
+
+## Access and Isolation Checks (Conditional)
+Apply this section when features include roles, tenants, or scoped data visibility.
+
+Required checks:
+1. Access check: scope A cannot read scope B data.
+2. Visibility check: scope A cannot discover restricted assets of scope B.
+3. Verification must include both API-level and user-visible route-level evidence.
+
+Completion note:
+1. Any task that introduces scoped access controls must include tests for both access and visibility checks.
+
+## Communication Template (Run Updates)
+Use this update template for task run progress:
+1. current objective
+2. current step
+3. result
+4. next step
+
+If blocked, report:
+1. blocker
+2. impact
+3. one recommended action
+
+## Recovery Commands Template
+Record project-specific recovery commands here before major operational changes.
+
+1. full bootstrap command
+2. stack reset command
+3. service health-check command
 
 ## Status Legend
 - [ ] Not started
@@ -85,8 +152,27 @@ Work:
 3. Add health endpoint wiring.
 
 Done criteria:
-1. App starts with env-driven config.
+1. App starts with env and SDK-config-driven resolution.
 2. Health endpoint returns success.
+
+### T-004A Implement Defaults-First Config Profiles
+Status: [ ]
+
+Objective:
+Provide simple presets for most developers and explicit overrides for advanced tuning.
+
+Dependencies:
+T-004
+
+Work:
+1. Add profile selector (dev, balanced, quality, latency).
+2. Implement precedence: explicit env > profile default > built-in default.
+3. Add startup config summary showing effective values and overridden keys.
+
+Done criteria:
+1. App runs with minimal config using default profile.
+2. Overridden values deterministically replace profile defaults.
+3. Profile behavior is test-covered.
 
 ### T-005 Implement HTTP API Base Layer
 Status: [ ]
@@ -111,7 +197,7 @@ Done criteria:
 Status: [ ]
 
 Objective:
-Expose framework surface: AIApp, ai_route decorator, add_data placeholder.
+Expose framework surface: AIApp, ai_route decorator, add_data placeholder, and integration-ready public contracts.
 
 Dependencies:
 T-004, T-005
@@ -121,10 +207,95 @@ Work:
 2. Add ai_route decorator registration.
 3. Add route registry and runtime binding.
 4. Add add_data method stub with clear NotImplemented path.
+5. Define stable public interfaces for library and router plugin consumption.
 
 Done criteria:
 1. Developer can define a route with decorator.
 2. Route appears in API docs.
+3. Public API is usable from an existing host app without replacing host routing.
+
+### T-006D Implement FastAI SDK Config Object Facade
+Status: [ ]
+
+Objective:
+Expose a developer-first SDK surface that accepts typed config objects.
+
+Dependencies:
+T-004A, T-006
+
+Work:
+1. Add FastAI facade class wrapping core runtime behaviors.
+2. Add typed config objects for runtime, vector backend, retrieval, ingestion, llm, and auth.
+3. Implement config precedence: constructor args > config object > env > profile > built-in default.
+4. Add SDK usage examples for library, mount, and query calls.
+5. Implement and document constructor matrix:
+	- FastAI()
+	- FastAI(config=FastAIConfig(...))
+	- FastAI.from_env()
+	- FastAI.from_profile(profile, **overrides)
+	- FastAI.for_pgvector(...)
+	- FastAI.for_qdrant(...)
+	- FastAI.for_mongodb_atlas(...)
+
+Done criteria:
+1. Developer can initialize FastAI(config=FastAIConfig(...)) with partial config objects.
+2. SDK behavior is equivalent to env-based setup under matching values.
+3. Constructor matrix behavior and precedence are covered by tests.
+4. Minimal onboarding path works by setting backend and model plus provider credential.
+
+### T-006A Implement Library Integration Mode
+Status: [ ]
+
+Objective:
+Allow existing services to call FastAI from existing endpoints with minimal code changes.
+
+Dependencies:
+T-006
+
+Work:
+1. Add library/client entrypoint for host application route handlers.
+2. Keep request and response contracts consistent with framework-native routes.
+3. Add minimal example for host app integration.
+
+Done criteria:
+1. Existing FastAPI route can call FastAI logic without route migration.
+2. Response contains answer and sources contract.
+
+### T-006B Implement Router Plugin Mode
+Status: [ ]
+
+Objective:
+Allow host apps to mount FastAI routes under a chosen namespace path.
+
+Dependencies:
+T-006
+
+Work:
+1. Expose mountable router/plugin entrypoint.
+2. Support configurable mount path (for example /ai).
+3. Add host app mounting example.
+
+Done criteria:
+1. Host app can mount FastAI router without replacing existing routes.
+2. Mounted route returns answer and sources contract.
+
+### T-006C Validate Sidecar Integration Mode
+Status: [ ]
+
+Objective:
+Ensure FastAI can be consumed as an independent HTTP service by external host apps.
+
+Dependencies:
+T-005, T-006
+
+Work:
+1. Validate API compatibility with specs/api-contract.yaml.
+2. Add example client call from external service context.
+3. Verify cross-service error mapping behavior.
+
+Done criteria:
+1. Sidecar service is callable from another app over HTTP.
+2. Response and error contracts match API specification.
 
 ## Phase 2: Storage and Migrations
 
@@ -177,10 +348,31 @@ Work:
 1. Add repository interfaces in shared contracts.
 2. Add PostgreSQL repository implementations.
 3. Add transaction and session management.
+4. Add vector store adapter interface with common operations.
 
 Done criteria:
 1. Repository integration tests pass for create/read flows.
 2. Rollback behavior works on simulated failure.
+3. Vector adapter contract tests pass against default backend.
+
+### T-009A Implement Vector Backend Adapters
+Status: [ ]
+
+Objective:
+Support bring-your-own vector databases through interchangeable adapters.
+
+Dependencies:
+T-009
+
+Work:
+1. Implement pgvector adapter.
+2. Implement qdrant adapter.
+3. Implement mongodb atlas vector search adapter.
+4. Add backend selector wiring from configuration.
+
+Done criteria:
+1. Same ingest and query flow works across all supported backends.
+2. No API contract changes are required when switching backend.
 
 ## Phase 3: Ingestion Pipeline
 
@@ -201,6 +393,25 @@ Work:
 Done criteria:
 1. txt and PDF files are discovered.
 2. Unsupported files are skipped without crash.
+
+### T-010A Implement Ingestion Configuration Controls
+Status: [ ]
+
+Objective:
+Expose ingestion tuning for advanced users while preserving safe defaults.
+
+Dependencies:
+T-010
+
+Work:
+1. Add recursive toggle, include/exclude globs, and max file limit.
+2. Add failure policy (continue or fail_fast).
+3. Add dedupe mode controls.
+
+Done criteria:
+1. Defaults work without extra tuning.
+2. Advanced options are validated and documented.
+3. Ingestion behavior is deterministic under fixed config.
 
 ### T-011 Implement Text Extraction
 Status: [ ]
@@ -287,7 +498,7 @@ T-014
 
 Work:
 1. Embed user query.
-2. Run pgvector similarity search.
+2. Run similarity search via selected vector adapter.
 3. Return ranked chunk candidates.
 
 Done criteria:
@@ -360,13 +571,14 @@ Dependencies:
 T-017, T-018
 
 Work:
-1. Define default prompt template.
+1. Define default prompt template sections in fixed order: system_instructions, route_instructions, retrieved_context, user_query.
 2. Add prompt assembly service.
 3. Ensure deterministic prompt ordering and sectioning.
 
 Done criteria:
 1. Prompt includes expected sections in stable order.
 2. Prompt assembly unit tests pass.
+3. Template variables and section order are documented.
 
 ### T-020 Wire AI Route Runtime End-to-End
 Status: [ ]
@@ -381,10 +593,14 @@ Work:
 1. Route handler calls orchestration use case.
 2. Return answer with sources.
 3. Add route-level config options for retrieval parameters.
+4. Preserve cross-mode response invariants (library, plugin, sidecar).
+5. Enforce auth-mode behavior parity with env contract and API contract.
 
 Done criteria:
 1. POST request returns answer and sources contract.
 2. End-to-end integration test passes.
+3. Contract parity is validated across all integration modes.
+4. Auth mode tests cover disabled and api_key behavior.
 
 ## Phase 6: Observability and Reliability
 
@@ -458,10 +674,12 @@ Work:
 2. Add integration tests for db and retrieval flows.
 3. Add contract tests for API schema and provider interface.
 4. Add failure tests for invalid key, provider timeout, bad input.
+5. Add integration-mode tests for library, plugin, and sidecar flows.
 
 Done criteria:
 1. All core flows and failure paths have automated tests.
 2. Test suite is runnable in Docker-based CI.
+3. Integration-mode parity tests pass.
 
 ### T-025 Finalize API Docs and Developer Quickstart
 Status: [ ]
@@ -474,12 +692,13 @@ T-020, T-024
 
 Work:
 1. Validate OpenAPI output for AI routes.
-2. Add quickstart snippet using AIApp and add_data.
+2. Add quickstart snippets for library, router plugin, and sidecar setup.
 3. Document env vars and docker-first startup.
 
 Done criteria:
 1. New developer can run stack and hit /ask successfully.
 2. Docs match actual runtime behavior.
+3. Non-invasive integration paths are documented with copyable commands.
 
 ### T-026 MVP Readiness Review
 Status: [ ]
@@ -491,7 +710,7 @@ Dependencies:
 T-025
 
 Work:
-1. Verify completion against requirements.md MVP exit criteria.
+1. Verify completion against specs/requirements.md MVP exit criteria.
 2. Run full lint, type-check, tests, and integration run.
 3. Record known limitations and deferred items.
 

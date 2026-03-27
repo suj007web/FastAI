@@ -26,7 +26,7 @@ FastAI is an AI-native RAG backend framework. The MVP needs:
 | LLM/Embeddings Adapter | LiteLLM | Single interface across multiple providers, enables BYOK and provider-agnostic design. |
 | PDF Parsing | pypdf | Simple, stable, and enough for MVP PDF text extraction. |
 | Text Chunking/Token Utilities | tiktoken + internal chunker | Deterministic chunk sizing and direct control over retrieval behavior. |
-| Vector + Metadata Storage | PostgreSQL 16 + pgvector | One durable system for vectors and metadata; simple Docker Compose setup and SQL tooling. |
+| Vector + Metadata Storage | BYO backend via adapter (default: PostgreSQL 16 + pgvector; also Qdrant and MongoDB Atlas Vector Search) | Developers keep ownership of data and choose backend by environment configuration. |
 | ORM/Data Access | SQLAlchemy 2.x | Mature Python data layer with good control and portability. |
 | Migrations | Alembic | Standard, reliable schema migration workflow for team development. |
 | Logging | structlog + standard logging | Structured logs with low complexity and good compatibility. |
@@ -87,19 +87,17 @@ Alternatives:
   - Why not now: adds framework coupling and complexity for a core framework product.
 
 ## 5.3 Vector Storage
-### Chosen: PostgreSQL + pgvector
-- Pros: single system for vectors + metadata, transactional consistency, easy operations.
+### Chosen: Adapter strategy with pgvector default
+- Pros: supports data ownership and backend portability while keeping a simple default path.
 
-Alternatives:
+Supported backends in MVP:
+- PostgreSQL + pgvector (default)
 - Qdrant
-  - Pros: purpose-built vector capabilities and strong filtering.
-  - Why not now: introduces an extra datastore for MVP where one-store simplicity is preferred.
+- MongoDB Atlas Vector Search
+
+Future candidates:
 - Weaviate / Milvus
-  - Pros: advanced vector-native features.
-  - Why not now: higher operational and conceptual overhead for initial release.
 - Chroma/FAISS local-first stores
-  - Pros: very fast to prototype.
-  - Why not now: weaker path for production durability and team workflows.
 
 ## 5.4 Ingestion and Parsing
 ### Chosen: pypdf + internal extractors
@@ -123,7 +121,7 @@ Alternatives:
   - Why not now: operational overhead before product behavior stabilizes.
 
 ## 6. Tradeoffs Accepted in MVP
-1. pgvector is not the most specialized vector engine, but greatly simplifies operations.
+1. Maintaining multiple vector adapters increases testing scope, accepted to preserve user data ownership.
 2. pypdf extraction quality may be lower on complex PDF layouts; acceptable for MVP scope.
 3. LiteLLM abstraction may hide some provider-specific features; acceptable to keep API stable.
 4. OpenTelemetry is optional at first to keep setup lean.
@@ -133,7 +131,7 @@ Alternatives:
 2. FastAPI: latest stable 0.x compatible with Pydantic v2
 3. Pydantic: v2
 4. SQLAlchemy: 2.x
-5. PostgreSQL: 16 with pgvector extension
+5. Vector backend: pgvector default; qdrant and mongodb atlas supported via adapters
 6. Docker Compose spec: v3.9+
 
 ## 8. Security and Operations Baseline
@@ -143,4 +141,4 @@ Alternatives:
 4. Resource limits configured for db and app in compose profiles for CI stability.
 
 ## 9. Decision Summary
-This stack is chosen to maximize speed-to-MVP while preserving long-term extensibility. The key strategy is Docker-first reproducibility, a clean modular Python core, provider-agnostic LLM integration, and a single durable datastore with pgvector for both metadata and semantic retrieval.
+This stack is chosen to maximize speed-to-MVP while preserving long-term extensibility and user data ownership. The key strategy is Docker-first reproducibility, a clean modular Python core, provider-agnostic LLM integration, and pluggable vector backends with a simple pgvector default.

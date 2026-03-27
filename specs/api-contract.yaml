@@ -22,6 +22,7 @@ paths:
       summary: Execute AI query
       operationId: ask
       security:
+        - {}
         - ApiKeyAuth: []
       requestBody:
         required: true
@@ -44,6 +45,12 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
           description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
           content:
             application/json:
               schema:

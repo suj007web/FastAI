@@ -30,6 +30,8 @@ fastai/
     requirements.md
     tech-stack.md
     project-structure.md
+    integration-modes.md
+    config-examples.md
     design-doc.md
     tasks.md
     execution-checklist.md

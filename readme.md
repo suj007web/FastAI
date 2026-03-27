@@ -82,6 +82,42 @@ def ask(query: str):
 3. Deterministic retrieval path: same inputs should produce same retrieved context.
 4. Observable pipeline: debug data is accessible for each request.
 
+## Integration Modes (Adopt By Choice)
+FastAI must be non-invasive. Users should integrate based on their constraints, not rewrite their app architecture.
+
+1. Library mode: call FastAI inside an existing endpoint in the user's app.
+2. Router plugin mode: mount FastAI-provided routes under a path such as /ai.
+3. Sidecar mode: run FastAI as a separate service and call it over HTTP.
+
+## End User Setup Flow (Existing Project)
+The expected setup for a developer integrating into an existing service is:
+
+1. Install dependency.
+2. Configure provider keys and retrieval settings in environment variables.
+3. Add document corpus path for ingestion.
+4. Wire one endpoint that calls FastAI logic.
+5. Query endpoint and receive answer plus sources.
+
+Example setup commands:
+
+```powershell
+pip install fastai-framework
+Copy-Item .env.example .env
+docker compose -f compose/docker-compose.yml up -d --build
+Invoke-WebRequest http://localhost:8000/health | Select-Object -Expand Content
+```
+
+Example query command:
+
+```bash
+curl -X POST http://localhost:8000/ask -H "Content-Type: application/json" -d '{"query":"What is refund policy?"}'
+```
+
+Expected response fields:
+1. answer
+2. sources
+3. debug (optional, when enabled)
+
 ## Requirements Reference
 Detailed, testable requirements are documented in specs/requirements.md.
 
@@ -90,6 +126,9 @@ Technology choices, Docker-first architecture, and alternatives analysis are doc
 
 ## Project Structure Reference
 Recommended modular monolith project layout, module boundaries, and folder ownership are documented in specs/project-structure.md.
+
+## Integration Modes Reference
+Non-invasive adoption patterns and end-user setup steps are documented in specs/integration-modes.md.
 
 ## Design Document Reference
 End-to-end architecture, flows, data model, error handling, and phased implementation plan are documented in specs/design-doc.md.
@@ -100,6 +139,7 @@ Step-by-step MVP implementation tasks with dependencies and done criteria are do
 ## Agentic Execution Pack
 Execution readiness checklist: specs/execution-checklist.md.
 Environment variable contract: specs/env-contract.md.
+Copy-ready configuration profiles and flow: specs/config-examples.md.
 Machine-readable API schema: specs/api-contract.yaml.
 CI quality gates and merge policy: specs/ci-gates.md.
 Test fixture and golden-case specification: specs/fixtures-spec.md.
