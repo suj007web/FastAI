@@ -194,7 +194,7 @@ Done criteria:
 2. Unhandled errors map to stable 500 response shape.
 
 ### T-006 Implement AIApp Public API Skeleton
-Status: [ ]
+Status: [x]
 
 Objective:
 Expose framework surface: AIApp, ai_route decorator, add_data placeholder, and integration-ready public contracts.
