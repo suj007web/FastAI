@@ -262,7 +262,7 @@ Done criteria:
 2. Response contains answer and sources contract.
 
 ### T-006B Implement Router Plugin Mode
-Status: [ ]
+Status: [x]
 
 Objective:
 Allow host apps to mount FastAI routes under a chosen namespace path.

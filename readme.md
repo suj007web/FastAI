@@ -102,7 +102,7 @@ Mount FastAI router in host app:
 
 ```python
 from fastapi import FastAPI
-from fastai import FastAI, mount_fastai_router
+from fastai import FastAI, get_fastai_router
 
 app = FastAPI()
 sdk = FastAI.for_qdrant(
@@ -110,7 +110,18 @@ sdk = FastAI.for_qdrant(
     collection="fastai_chunks",
     model="gpt-4.1-mini",
 )
-mount_fastai_router(app, sdk=sdk, path="/ai")
+app.include_router(get_fastai_router(sdk=sdk), prefix="/ai")
+```
+
+Mount FastAI plugin under custom path:
+
+```python
+from fastapi import FastAPI
+from fastai import FastAI, mount_fastai_router
+
+app = FastAPI()
+sdk = FastAI()
+mount_fastai_router(app, sdk=sdk, path="/assistant")
 ```
 
 Register and call custom AI route:

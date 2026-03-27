@@ -175,5 +175,7 @@ class FastAI:
 
 
 def mount_fastai_router(app: FastAPI, *, sdk: FastAI, path: str = "/ai") -> None:
-    """Convenience helper to mount FastAI routes into a host app."""
-    sdk.mount(app, path=path)
+    """Compatibility wrapper around the dedicated plugin mount entrypoint."""
+    from .plugin import mount_fastai_router as plugin_mount_fastai_router
+
+    plugin_mount_fastai_router(app, sdk=sdk, path=path)

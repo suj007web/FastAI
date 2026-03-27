@@ -11,7 +11,8 @@ from .config import (
 	RuntimeConfig,
 	VectorStoreConfig,
 )
-from .sdk import FastAI, mount_fastai_router
+from .plugin import get_fastai_router, mount_fastai_router
+from .sdk import FastAI
 
 __all__ = [
 	"AIApp",
@@ -27,6 +28,7 @@ __all__ = [
 	"__version__",
 	"ai_route",
 	"create_fastai_client",
+	"get_fastai_router",
 	"mount_fastai_router",
 ]
 
