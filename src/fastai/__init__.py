@@ -1,6 +1,7 @@
 """FastAI framework package root."""
 
 from .ai_app import AIApp, ai_route
+from .client import FastAIClient, create_fastai_client
 from .config import (
 	AuthConfig,
 	FastAIConfig,
@@ -16,6 +17,7 @@ __all__ = [
 	"AIApp",
 	"AuthConfig",
 	"FastAI",
+	"FastAIClient",
 	"FastAIConfig",
 	"IngestionConfig",
 	"LLMConfig",
@@ -24,6 +26,7 @@ __all__ = [
 	"VectorStoreConfig",
 	"__version__",
 	"ai_route",
+	"create_fastai_client",
 	"mount_fastai_router",
 ]
 

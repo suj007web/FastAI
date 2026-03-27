@@ -244,7 +244,7 @@ Done criteria:
 4. Minimal onboarding path works by setting backend and model plus provider credential.
 
 ### T-006A Implement Library Integration Mode
-Status: [ ]
+Status: [x]
 
 Objective:
 Allow existing services to call FastAI from existing endpoints with minimal code changes.

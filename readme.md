@@ -80,6 +80,24 @@ result = sdk.ask("What is the refund policy?")
 print(result["answer"])
 ```
 
+Host route handler integration with library client:
+
+```python
+from fastapi import FastAPI
+from fastai import FastAI, create_fastai_client
+
+app = FastAPI()
+client = create_fastai_client(
+    FastAI.from_profile("balanced", vector_backend="pgvector", model="gpt-4.1-mini")
+)
+
+@app.post("/support/ask")
+def support_ask(payload: dict[str, object]) -> dict[str, object]:
+    query = str(payload.get("query", ""))
+    debug = bool(payload.get("debug", False))
+    return client.ask(query=query, debug=debug)
+```
+
 Mount FastAI router in host app:
 
 ```python
