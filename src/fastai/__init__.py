@@ -13,6 +13,16 @@ from .config import (
 )
 from .plugin import get_fastai_router, mount_fastai_router
 from .sdk import FastAI
+from .storage import (
+	ChunkRecord,
+	ChunkRepository,
+	DocumentRecord,
+	DocumentRepository,
+	EmbeddingRecord,
+	EmbeddingRepository,
+	VectorQueryMatch,
+	VectorStoreAdapter,
+)
 
 __all__ = [
 	"AIApp",
@@ -25,6 +35,14 @@ __all__ = [
 	"RetrievalConfig",
 	"RuntimeConfig",
 	"VectorStoreConfig",
+	"ChunkRecord",
+	"ChunkRepository",
+	"DocumentRecord",
+	"DocumentRepository",
+	"EmbeddingRecord",
+	"EmbeddingRepository",
+	"VectorQueryMatch",
+	"VectorStoreAdapter",
 	"__version__",
 	"ai_route",
 	"create_fastai_client",

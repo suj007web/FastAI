@@ -299,80 +299,82 @@ Done criteria:
 
 ## Phase 2: Storage and Migrations
 
-### T-007 Design Initial Database Schema
+### T-007 Define Storage and Vector Contracts
+Status: [x]
+
+Objective:
+Define common interfaces for persistence and vector operations before backend-specific implementations.
+
+Dependencies:
+T-006
+
+Work:
+1. Add repository interfaces in shared contracts for documents, chunks, and embeddings.
+2. Add vector adapter interface with common operations (upsert, query, delete, namespace scope).
+3. Define backend-agnostic data contracts used by ingestion and retrieval layers.
+
+Done criteria:
+1. Contracts are stable and implementation-agnostic.
+2. Contract-level tests validate required adapter behavior.
+
+### T-008 Design Initial Database Schema
 Status: [ ]
 
 Objective:
 Create schema for documents, chunks, embeddings, and route definitions.
 
 Dependencies:
-T-003, T-006
+T-007
+T-003
 
 Work:
-1. Define SQLAlchemy models.
-2. Add pgvector column for embeddings.
-3. Define indexes for retrieval queries.
+1. Define SQLAlchemy models for metadata and embeddings persistence.
+2. Add pgvector column for default vector backend.
+3. Define indexes for top-k similarity and metadata lookup paths.
 
 Done criteria:
 1. Models map cleanly to intended tables.
 2. Index plan supports top-k similarity queries.
 
-### T-008 Add Alembic Migration Pipeline
+### T-009 Add Alembic Migration Pipeline
 Status: [ ]
 
 Objective:
 Version and apply database schema changes.
 
 Dependencies:
-T-007
+T-008
 
 Work:
 1. Initialize Alembic.
-2. Generate initial migration.
+2. Generate initial migration from T-008 schema.
 3. Add migration run command for local and CI.
 
 Done criteria:
 1. Fresh database can be migrated to latest revision.
 2. Migration command is repeatable in Docker workflow.
 
-### T-009 Implement Storage Repositories
+### T-009A Implement Storage Repositories and Vector Adapters
 Status: [ ]
 
 Objective:
-Implement repositories for document/chunk/embedding persistence.
-
-Dependencies:
-T-008
-
-Work:
-1. Add repository interfaces in shared contracts.
-2. Add PostgreSQL repository implementations.
-3. Add transaction and session management.
-4. Add vector store adapter interface with common operations.
-
-Done criteria:
-1. Repository integration tests pass for create/read flows.
-2. Rollback behavior works on simulated failure.
-3. Vector adapter contract tests pass against default backend.
-
-### T-009A Implement Vector Backend Adapters
-Status: [ ]
-
-Objective:
-Support bring-your-own vector databases through interchangeable adapters.
+Implement contract-compliant storage repositories and interchangeable vector adapters.
 
 Dependencies:
 T-009
+T-007
 
 Work:
-1. Implement pgvector adapter.
-2. Implement qdrant adapter.
-3. Implement mongodb atlas vector search adapter.
-4. Add backend selector wiring from configuration.
+1. Implement PostgreSQL repository implementations for document/chunk/embedding persistence.
+2. Add transaction and session management.
+3. Implement pgvector adapter against shared vector contract.
+4. Implement qdrant adapter and mongodb atlas vector search adapter against the same contract.
+5. Add backend selector wiring from configuration.
 
 Done criteria:
-1. Same ingest and query flow works across all supported backends.
-2. No API contract changes are required when switching backend.
+1. Repository integration tests pass for create/read flows and rollback behavior.
+2. Vector adapter contract tests pass for pgvector, qdrant, and mongodb atlas adapters.
+3. Same ingest and query flow works across all supported backends without API contract changes.
 
 ## Phase 3: Ingestion Pipeline
 
@@ -474,7 +476,7 @@ Objective:
 Wire discovery, extraction, chunking, embedding, and persistence.
 
 Dependencies:
-T-013, T-009
+T-013, T-009A
 
 Work:
 1. Replace add_data stub with full ingestion pipeline.
