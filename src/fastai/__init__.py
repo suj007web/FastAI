@@ -11,6 +11,12 @@ from .config import (
 	RuntimeConfig,
 	VectorStoreConfig,
 )
+from .context_builder import (
+	ContextBuildResult,
+	ContextSource,
+	build_context_payload,
+	estimate_text_tokens,
+)
 from .ingestion import (
 	ChunkEmbeddingResult,
 	EmbeddingAdapter,
@@ -60,6 +66,8 @@ __all__ = [
 	"FastAIConfig",
 	"IngestionConfig",
 	"LLMConfig",
+	"ContextBuildResult",
+	"ContextSource",
 	"ChunkEmbeddingResult",
 	"EmbeddingAdapter",
 	"LiteLLMEmbeddingAdapter",
@@ -92,9 +100,11 @@ __all__ = [
 	"VectorStoreAdapter",
 	"__version__",
 	"ai_route",
+	"build_context_payload",
 	"create_embedding_adapter",
 	"create_postgres_repositories",
 	"create_fastai_client",
+	"estimate_text_tokens",
 	"get_fastai_router",
 	"mount_fastai_router",
 	"retrieve_chunk_candidates",

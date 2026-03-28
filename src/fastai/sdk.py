@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
+from .context_builder import ContextBuildResult, build_context_payload
 from .ingestion import EmbeddingAdapter, IngestionSummary, create_embedding_adapter, ingest_path
 from .retrieval import (
     RetrievalDedupeStrategy,
@@ -289,6 +290,23 @@ class FastAI:
             dedupe_strategy=dedupe_strategy,
             source_paths=source_paths,
             candidate_limit=resolved_num_candidates,
+        )
+
+    def build_context(
+        self,
+        candidates: tuple[RetrievedChunkCandidate, ...],
+        *,
+        max_context_tokens: int | None = None,
+    ) -> ContextBuildResult:
+        """Build bounded context text and source mapping from retrieval candidates."""
+        resolved_max_context_tokens = (
+            max_context_tokens
+            if max_context_tokens is not None
+            else int(self.config.retrieval.max_context_tokens or 0)
+        )
+        return build_context_payload(
+            candidates,
+            max_context_tokens=resolved_max_context_tokens,
         )
 
     def summary(self) -> dict[str, object]:

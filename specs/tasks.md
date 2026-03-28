@@ -526,7 +526,7 @@ Done criteria:
 2. Unit tests cover threshold and dedupe logic.
 
 ### T-017 Implement Context Builder
-Status: [ ]
+Status: [x]
 
 Objective:
 Build bounded context payload from selected chunks.
