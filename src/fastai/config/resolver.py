@@ -154,11 +154,35 @@ def resolve_config(
             env_vector_cfg.qdrant_url,
             BUILTIN_VECTOR.qdrant_url,
         ),
+        qdrant_api_key=pick(
+            override_str(overrides, "qdrant_api_key"),
+            cfg_vector.qdrant_api_key,
+            env_vector_cfg.qdrant_api_key,
+            BUILTIN_VECTOR.qdrant_api_key,
+        ),
         qdrant_collection=pick_required(
             override_str(overrides, "qdrant_collection"),
             cfg_vector.qdrant_collection,
             env_vector_cfg.qdrant_collection,
             BUILTIN_VECTOR.qdrant_collection,
+        ),
+        qdrant_distance=pick_required(
+            override_str(overrides, "qdrant_distance"),
+            cfg_vector.qdrant_distance,
+            env_vector_cfg.qdrant_distance,
+            BUILTIN_VECTOR.qdrant_distance,
+        ),
+        qdrant_timeout_sec=pick_required(
+            override_int(overrides, "qdrant_timeout_sec"),
+            cfg_vector.qdrant_timeout_sec,
+            env_vector_cfg.qdrant_timeout_sec,
+            BUILTIN_VECTOR.qdrant_timeout_sec,
+        ),
+        qdrant_prefer_grpc=pick_required(
+            override_bool(overrides, "qdrant_prefer_grpc"),
+            cfg_vector.qdrant_prefer_grpc,
+            env_vector_cfg.qdrant_prefer_grpc,
+            BUILTIN_VECTOR.qdrant_prefer_grpc,
         ),
         mongodb_uri=pick(
             override_str(overrides, "mongodb_uri"),
@@ -177,6 +201,24 @@ def resolve_config(
             cfg_vector.mongodb_vector_collection,
             env_vector_cfg.mongodb_vector_collection,
             BUILTIN_VECTOR.mongodb_vector_collection,
+        ),
+        mongodb_vector_index_name=pick(
+            override_str(overrides, "mongodb_vector_index_name"),
+            cfg_vector.mongodb_vector_index_name,
+            env_vector_cfg.mongodb_vector_index_name,
+            BUILTIN_VECTOR.mongodb_vector_index_name,
+        ),
+        mongodb_vector_num_candidates=pick_required(
+            override_int(overrides, "mongodb_vector_num_candidates"),
+            cfg_vector.mongodb_vector_num_candidates,
+            env_vector_cfg.mongodb_vector_num_candidates,
+            BUILTIN_VECTOR.mongodb_vector_num_candidates,
+        ),
+        mongodb_vector_similarity=pick_required(
+            override_str(overrides, "mongodb_vector_similarity"),
+            cfg_vector.mongodb_vector_similarity,
+            env_vector_cfg.mongodb_vector_similarity,
+            BUILTIN_VECTOR.mongodb_vector_similarity,
         ),
     )
 

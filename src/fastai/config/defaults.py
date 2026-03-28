@@ -27,6 +27,13 @@ BUILTIN_VECTOR = VectorStoreConfig(
     namespace="default",
     pgvector_dsn="postgresql+psycopg://fastai:fastai@db:5432/fastai",
     qdrant_collection="fastai_chunks",
+    qdrant_distance="cosine",
+    qdrant_timeout_sec=10,
+    qdrant_prefer_grpc=False,
+    mongodb_vector_collection="chunks",
+    mongodb_vector_index_name="vector_index",
+    mongodb_vector_num_candidates=100,
+    mongodb_vector_similarity="cosine",
 )
 BUILTIN_RETRIEVAL = RetrievalConfig(
     top_k=5,

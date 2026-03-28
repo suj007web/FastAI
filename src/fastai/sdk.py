@@ -7,10 +7,12 @@ from collections.abc import Callable
 from typing import Any, cast
 
 from fastapi import APIRouter, FastAPI
+from sqlalchemy.orm import Session
 
 from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
+from .storage import VectorStoreAdapter, select_vector_adapter
 
 
 class FastAI:
@@ -82,6 +84,10 @@ class FastAI:
         model: str,
         provider: str = "openai",
         provider_credential: str | None = None,
+        api_key: str | None = None,
+        distance: str | None = None,
+        timeout_sec: int | None = None,
+        prefer_grpc: bool | None = None,
         **overrides: object,
     ) -> FastAI:
         """Create SDK instance preconfigured for qdrant backend."""
@@ -89,7 +95,11 @@ class FastAI:
         return cls(
             vector_backend="qdrant",
             qdrant_url=url,
+            qdrant_api_key=api_key,
             qdrant_collection=collection,
+            qdrant_distance=distance,
+            qdrant_timeout_sec=timeout_sec,
+            qdrant_prefer_grpc=prefer_grpc,
             model=model,
             provider=provider,
             provider_credential=provider_credential,
@@ -106,6 +116,9 @@ class FastAI:
         model: str,
         provider: str = "openai",
         provider_credential: str | None = None,
+        vector_index_name: str | None = None,
+        num_candidates: int | None = None,
+        similarity: str | None = None,
         **overrides: object,
     ) -> FastAI:
         """Create SDK instance preconfigured for MongoDB Atlas vector backend."""
@@ -115,6 +128,9 @@ class FastAI:
             mongodb_uri=uri,
             mongodb_database=database,
             mongodb_vector_collection=collection,
+            mongodb_vector_index_name=vector_index_name,
+            mongodb_vector_num_candidates=num_candidates,
+            mongodb_vector_similarity=similarity,
             model=model,
             provider=provider,
             provider_credential=provider_credential,
@@ -161,6 +177,10 @@ class FastAI:
     def add_data(self, path: str) -> None:
         """Forward ingestion placeholder call until ingestion pipeline is implemented."""
         self._ai_app.add_data(path)
+
+    def create_vector_adapter(self, *, session: Session | None = None) -> VectorStoreAdapter:
+        """Create configured vector adapter for the active backend."""
+        return select_vector_adapter(self.config.vector_store, pgvector_session=session)
 
     def summary(self) -> dict[str, object]:
         """Return resolved configuration as a serializable dictionary."""

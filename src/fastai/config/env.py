@@ -37,10 +37,17 @@ def env_vector() -> VectorStoreConfig:
         namespace=getenv("FASTAI_VECTOR_NAMESPACE"),
         pgvector_dsn=getenv("FASTAI_DB_DSN"),
         qdrant_url=getenv("QDRANT_URL"),
+        qdrant_api_key=getenv("QDRANT_API_KEY"),
         qdrant_collection=getenv("QDRANT_COLLECTION"),
+        qdrant_distance=getenv("QDRANT_DISTANCE"),
+        qdrant_timeout_sec=parse_int(getenv("QDRANT_TIMEOUT_SEC")),
+        qdrant_prefer_grpc=parse_bool(getenv("QDRANT_PREFER_GRPC")),
         mongodb_uri=getenv("MONGODB_URI"),
         mongodb_database=getenv("MONGODB_DATABASE"),
         mongodb_vector_collection=getenv("MONGODB_VECTOR_COLLECTION"),
+        mongodb_vector_index_name=getenv("MONGODB_VECTOR_INDEX_NAME"),
+        mongodb_vector_num_candidates=parse_int(getenv("MONGODB_VECTOR_NUM_CANDIDATES")),
+        mongodb_vector_similarity=getenv("MONGODB_VECTOR_SIMILARITY"),
     )
 
 

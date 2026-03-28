@@ -18,6 +18,18 @@ from .models import (
     EmbeddingModel,
     RouteDefinitionModel,
 )
+from .mongodb_adapter import MongoDBAtlasVectorAdapter
+from .pgvector_adapter import PgVectorAdapter
+from .postgres_repositories import (
+    PostgresChunkRepository,
+    PostgresDocumentRepository,
+    PostgresEmbeddingRepository,
+    PostgresRepositoryBundle,
+    create_postgres_repositories,
+)
+from .qdrant_adapter import QdrantVectorAdapter
+from .session import StorageSessionManager
+from .vector_adapters import select_vector_adapter
 
 __all__ = [
     "ChunkRecord",
@@ -31,7 +43,17 @@ __all__ = [
     "EmbeddingModel",
     "EmbeddingRepository",
     "Base",
+    "MongoDBAtlasVectorAdapter",
+    "PgVectorAdapter",
+    "PostgresChunkRepository",
+    "PostgresDocumentRepository",
+    "PostgresEmbeddingRepository",
+    "PostgresRepositoryBundle",
+    "QdrantVectorAdapter",
     "RouteDefinitionModel",
+    "StorageSessionManager",
     "VectorQueryMatch",
     "VectorStoreAdapter",
+    "create_postgres_repositories",
+    "select_vector_adapter",
 ]

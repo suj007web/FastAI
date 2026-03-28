@@ -16,6 +16,8 @@ dependencies = [
   "fastapi>=0.111.0",
   "pgvector>=0.2.5",
   "psycopg[binary]>=3.1.19",
+  "pymongo>=4.8.0",
+  "qdrant-client>=1.12.1",
   "sqlalchemy>=2.0.30",
   "uvicorn>=0.30.0",
 ]

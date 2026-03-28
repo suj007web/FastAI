@@ -355,7 +355,7 @@ Done criteria:
 2. Migration command is repeatable in Docker workflow.
 
 ### T-009A Implement Storage Repositories and Vector Adapters
-Status: [ ]
+Status: [x]
 
 Objective:
 Implement contract-compliant storage repositories and interchangeable vector adapters.

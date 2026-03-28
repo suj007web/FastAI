@@ -30,10 +30,17 @@ class VectorStoreConfig:
     namespace: str | None = None
     pgvector_dsn: str | None = None
     qdrant_url: str | None = None
+    qdrant_api_key: str | None = None
     qdrant_collection: str | None = None
+    qdrant_distance: str | None = None
+    qdrant_timeout_sec: int | None = None
+    qdrant_prefer_grpc: bool | None = None
     mongodb_uri: str | None = None
     mongodb_database: str | None = None
     mongodb_vector_collection: str | None = None
+    mongodb_vector_index_name: str | None = None
+    mongodb_vector_num_candidates: int | None = None
+    mongodb_vector_similarity: str | None = None
 
 
 @dataclass(frozen=True)
