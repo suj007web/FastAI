@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, cast
 
 from fastapi import APIRouter, FastAPI
@@ -26,11 +27,86 @@ from .retrieval import (
     retrieve_chunk_candidates,
 )
 from .storage import (
+    ChunkRecord,
+    DocumentRecord,
+    EmbeddingRecord,
     StorageSessionManager,
     VectorStoreAdapter,
     create_postgres_repositories,
     select_vector_adapter,
 )
+
+
+@dataclass
+class _InMemoryDocumentRepository:
+    """In-memory metadata store used when vector backend is not pgvector."""
+
+    _items: dict[str, DocumentRecord]
+
+    def upsert(self, document: DocumentRecord) -> DocumentRecord:
+        self._items[document.id] = document
+        return document
+
+    def get(self, document_id: str) -> DocumentRecord | None:
+        return self._items.get(document_id)
+
+    def list_ids(self) -> tuple[str, ...]:
+        return tuple(sorted(self._items))
+
+
+@dataclass
+class _InMemoryChunkRepository:
+    """In-memory chunk store used for non-pgvector ingestion metadata."""
+
+    _items: dict[str, ChunkRecord]
+
+    def upsert_many(self, chunks: tuple[ChunkRecord, ...]) -> tuple[ChunkRecord, ...]:
+        for chunk in chunks:
+            self._items[chunk.id] = chunk
+        return chunks
+
+    def list_by_document(self, document_id: str) -> tuple[ChunkRecord, ...]:
+        by_document = [item for item in self._items.values() if item.document_id == document_id]
+        by_document.sort(key=lambda item: (item.chunk_index, item.id))
+        return tuple(by_document)
+
+
+@dataclass
+class _InMemoryEmbeddingRepository:
+    """In-memory embedding store used for non-pgvector ingestion metadata."""
+
+    _items: dict[str, EmbeddingRecord]
+
+    def upsert_many(
+        self,
+        embeddings: tuple[EmbeddingRecord, ...],
+    ) -> tuple[EmbeddingRecord, ...]:
+        for embedding in embeddings:
+            self._items[embedding.id] = embedding
+        return embeddings
+
+    def list_by_chunk_ids(self, chunk_ids: tuple[str, ...]) -> tuple[EmbeddingRecord, ...]:
+        if not chunk_ids:
+            return ()
+        chunk_id_set = set(chunk_ids)
+        return tuple(item for item in self._items.values() if item.chunk_id in chunk_id_set)
+
+
+@dataclass
+class _InMemoryRepositoryBundle:
+    """Contract-compliant metadata bundle for non-pgvector ingestion."""
+
+    documents: _InMemoryDocumentRepository
+    chunks: _InMemoryChunkRepository
+    embeddings: _InMemoryEmbeddingRepository
+
+
+def _create_in_memory_repositories() -> _InMemoryRepositoryBundle:
+    return _InMemoryRepositoryBundle(
+        documents=_InMemoryDocumentRepository(_items={}),
+        chunks=_InMemoryChunkRepository(_items={}),
+        embeddings=_InMemoryEmbeddingRepository(_items={}),
+    )
 
 
 class FastAI:
@@ -202,39 +278,54 @@ class FastAI:
 
     def add_data(self, path: str) -> IngestionSummary:
         """Run full ingestion pipeline and persist indexed artifacts."""
-        dsn = self.config.vector_store.pgvector_dsn
-        if not dsn:
-            raise ValueError(
-                "FASTAI_DB_DSN (pgvector_dsn) is required for add_data metadata persistence."
-            )
-
         backend = (self.config.vector_store.backend or "").strip().lower()
         embedding_model = self.config.llm.embedding_model or self.config.llm.model
         if not embedding_model:
             raise ValueError("Embedding model is required for add_data ingestion.")
 
-        manager = StorageSessionManager(dsn)
-        with manager.session_scope() as session:
-            repositories = create_postgres_repositories(session)
-            vector_adapter = select_vector_adapter(
-                self.config.vector_store,
-                pgvector_session=session if backend == "pgvector" else None,
-            )
-            embedding_adapter = self.create_embedding_adapter()
-            summary = ingest_path(
-                path=path,
-                namespace=self.config.vector_store.namespace or "default",
-                model_name=embedding_model,
-                ingestion_config=self.config.ingestion,
-                document_repo=repositories.documents,
-                chunk_repo=repositories.chunks,
-                embedding_repo=repositories.embeddings,
-                vector_adapter=vector_adapter,
-                embedding_adapter=embedding_adapter,
-                persist_embeddings_locally=backend != "pgvector",
-            )
+        if backend == "pgvector":
+            dsn = self.config.vector_store.pgvector_dsn
+            if not dsn:
+                raise ValueError(
+                    "FASTAI_DB_DSN (pgvector_dsn) is required for pgvector add_data ingestion."
+                )
 
-        return summary
+            manager = StorageSessionManager(dsn)
+            with manager.session_scope() as session:
+                repositories = create_postgres_repositories(session)
+                vector_adapter = select_vector_adapter(
+                    self.config.vector_store,
+                    pgvector_session=session,
+                )
+                embedding_adapter = self.create_embedding_adapter()
+                return ingest_path(
+                    path=path,
+                    namespace=self.config.vector_store.namespace or "default",
+                    model_name=embedding_model,
+                    ingestion_config=self.config.ingestion,
+                    document_repo=repositories.documents,
+                    chunk_repo=repositories.chunks,
+                    embedding_repo=repositories.embeddings,
+                    vector_adapter=vector_adapter,
+                    embedding_adapter=embedding_adapter,
+                    persist_embeddings_locally=False,
+                )
+
+        repositories = _create_in_memory_repositories()
+        vector_adapter = select_vector_adapter(self.config.vector_store)
+        embedding_adapter = self.create_embedding_adapter()
+        return ingest_path(
+            path=path,
+            namespace=self.config.vector_store.namespace or "default",
+            model_name=embedding_model,
+            ingestion_config=self.config.ingestion,
+            document_repo=repositories.documents,
+            chunk_repo=repositories.chunks,
+            embedding_repo=repositories.embeddings,
+            vector_adapter=vector_adapter,
+            embedding_adapter=embedding_adapter,
+            persist_embeddings_locally=True,
+        )
 
     def create_vector_adapter(self, *, session: Session | None = None) -> VectorStoreAdapter:
         """Create configured vector adapter for the active backend."""

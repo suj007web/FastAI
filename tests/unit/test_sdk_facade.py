@@ -23,6 +23,7 @@ from fastai import (
     mount_fastai_router,
 )
 from fastai.app.api.schemas import AskRequest
+from fastai.ingestion import ChunkEmbeddingResult
 
 
 def test_sdk_initializes_with_partial_config_objects() -> None:
@@ -205,7 +206,37 @@ def test_sdk_embedding_adapter_creation_requires_provider_key() -> None:
         sdk.create_embedding_adapter()
 
 
-def test_sdk_add_data_requires_pgvector_dsn_for_metadata_persistence(tmp_path: Path) -> None:
+def test_sdk_add_data_non_pgvector_does_not_require_pgvector_dsn(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class _FakeVectorAdapter:
+        def upsert(self, namespace: str, embeddings: tuple) -> None:
+            return None
+
+        def query(self, namespace: str, vector: tuple[float, ...], *, top_k: int, min_score: float):
+            return ()
+
+        def delete(self, namespace: str, embedding_ids: tuple[str, ...]) -> int:
+            return 0
+
+        def delete_namespace(self, namespace: str) -> int:
+            return 0
+
+    class _FakeEmbeddingAdapter:
+        def embed_texts(self, texts: tuple[str, ...]) -> tuple[tuple[float, ...], ...]:
+            return tuple((1.0, 0.0, 0.0) for _ in texts)
+
+        def embed_chunks(self, chunks):
+            return tuple(
+                ChunkEmbeddingResult(
+                    text=chunk.text,
+                    values=(1.0, 0.0, 0.0),
+                    metadata=dict(chunk.metadata),
+                )
+                for chunk in chunks
+            )
+
     sdk = FastAI(
         pgvector_dsn="",
         config=FastAIConfig(
@@ -216,6 +247,33 @@ def test_sdk_add_data_requires_pgvector_dsn_for_metadata_persistence(tmp_path: P
                 openai_api_key="sk-test",
             ),
         )
+    )
+
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "guide.txt").write_text("hello", encoding="utf-8")
+
+    monkeypatch.setattr("fastai.sdk.select_vector_adapter", lambda *_args, **_kwargs: _FakeVectorAdapter())
+    monkeypatch.setattr(sdk, "create_embedding_adapter", lambda: _FakeEmbeddingAdapter())
+
+    summary = sdk.add_data(str(docs_dir))
+
+    assert summary.processed == 1
+    assert summary.failed == 0
+    assert summary.documents == 1
+
+
+def test_sdk_add_data_pgvector_requires_dsn(tmp_path: Path) -> None:
+    sdk = FastAI(
+        pgvector_dsn="",
+        config=FastAIConfig(
+            vector_store=VectorStoreConfig(backend="pgvector", pgvector_dsn=None),
+            llm=LLMConfig(
+                provider="openai",
+                embedding_model="text-embedding-3-small",
+                openai_api_key="sk-test",
+            ),
+        ),
     )
 
     docs_dir = tmp_path / "docs"
