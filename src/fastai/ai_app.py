@@ -14,7 +14,7 @@ from .config.types import IngestionConfig
 from .ingestion import discover_ingestion_files, resolve_ingestion_discovery_options
 
 HandlerReturn = str | AskResponse | dict[str, object]
-RouteHandler = Callable[[str], HandlerReturn | Awaitable[HandlerReturn]]
+RouteHandler = Callable[..., HandlerReturn | Awaitable[HandlerReturn]]
 LOGGER = logging.getLogger("fastai.ingestion")
 
 
@@ -71,7 +71,7 @@ class AIApp:
         if route_name not in self._routes:
             raise KeyError(f"AI route '{route_name}' is not registered.")
         _, handler = self._routes[route_name]
-        result = handler(payload.query)
+        result = self._invoke_handler(handler, payload)
         if inspect.isawaitable(result):
             result = await result
         return self._to_ask_response(result)
@@ -106,6 +106,26 @@ class AIApp:
         if isinstance(result, str):
             return AskResponse(answer=result, sources=[])
         return AskResponse.model_validate(result)
+
+    @staticmethod
+    def _invoke_handler(
+        handler: RouteHandler,
+        payload: AskRequest,
+    ) -> HandlerReturn | Awaitable[HandlerReturn]:
+        signature = inspect.signature(handler)
+        positional_params = [
+            param
+            for param in signature.parameters.values()
+            if param.kind
+            in (
+                inspect.Parameter.POSITIONAL_ONLY,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            )
+        ]
+
+        if len(positional_params) >= 2:
+            return handler(payload.query, payload)
+        return handler(payload.query)
 
 
 def ai_route(

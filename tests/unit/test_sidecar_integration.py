@@ -52,6 +52,39 @@ def test_sidecar_success_response_matches_api_contract_shape() -> None:
     assert isinstance(payload["sources"], list)
 
 
+def test_sidecar_auth_mode_disabled_allows_requests(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FASTAI_API_AUTH_MODE", "disabled")
+    app = create_app()
+    client = TestClient(app)
+
+    response = client.post("/ask", json={"query": "hello"})
+
+    assert response.status_code == 200
+
+
+def test_sidecar_auth_mode_api_key_requires_header(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FASTAI_API_AUTH_MODE", "api_key")
+    monkeypatch.setenv("FASTAI_API_KEY", "secret-key")
+
+    app = create_app()
+    client = TestClient(app)
+
+    missing_header = client.post("/ask", json={"query": "hello"})
+    assert missing_header.status_code == 401
+    assert missing_header.json()["code"] == "unauthorized"
+
+    wrong_key = client.post("/ask", headers={"X-API-Key": "wrong"}, json={"query": "hello"})
+    assert wrong_key.status_code == 403
+    assert wrong_key.json()["code"] == "forbidden"
+
+    valid_key = client.post(
+        "/ask",
+        headers={"X-API-Key": "secret-key"},
+        json={"query": "hello"},
+    )
+    assert valid_key.status_code == 200
+
+
 def test_sidecar_cross_service_error_mapping_is_stable(monkeypatch: pytest.MonkeyPatch) -> None:
     sidecar_app = create_app()
     sidecar_client = TestClient(sidecar_app, raise_server_exceptions=False)

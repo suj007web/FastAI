@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -10,6 +12,16 @@ class AskRequest(BaseModel):
 
     query: str = Field(min_length=1, max_length=10_000)
     debug: bool = False
+    top_k: int | None = Field(default=None, gt=0)
+    min_score: float | None = None
+    num_candidates: int | None = Field(default=None, gt=0)
+    dedupe_strategy: Literal["none", "chunk", "document"] | None = None
+    source_paths: tuple[str, ...] | None = None
+    max_context_tokens: int | None = Field(default=None, gt=0)
+    system_instructions: str | None = None
+    route_instructions: str | None = None
+    max_tokens: int | None = Field(default=None, gt=0)
+    temperature: float | None = None
 
 
 class Source(BaseModel):

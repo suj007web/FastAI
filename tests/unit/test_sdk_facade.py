@@ -1,19 +1,28 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from fastai import (
+    ContextBuildResult,
+    ContextSource,
     FastAI,
     FastAIConfig,
+    GenerationResult,
     IngestionConfig,
     LLMConfig,
+    PromptBuildResult,
+    PromptSection,
     RetrievalConfig,
+    RetrievedChunkCandidate,
     RuntimeConfig,
     VectorStoreConfig,
     mount_fastai_router,
 )
+from fastai.app.api.schemas import AskRequest
 
 
 def test_sdk_initializes_with_partial_config_objects() -> None:
@@ -196,7 +205,7 @@ def test_sdk_embedding_adapter_creation_requires_provider_key() -> None:
         sdk.create_embedding_adapter()
 
 
-def test_sdk_add_data_requires_pgvector_dsn_for_metadata_persistence(tmp_path) -> None:
+def test_sdk_add_data_requires_pgvector_dsn_for_metadata_persistence(tmp_path: Path) -> None:
     sdk = FastAI(
         pgvector_dsn="",
         config=FastAIConfig(
@@ -215,3 +224,120 @@ def test_sdk_add_data_requires_pgvector_dsn_for_metadata_persistence(tmp_path) -
 
     with pytest.raises(ValueError, match="FASTAI_DB_DSN"):
         sdk.add_data(str(docs_dir))
+
+
+def test_sdk_default_route_executes_orchestration_flow(monkeypatch: pytest.MonkeyPatch) -> None:
+    sdk = FastAI()
+
+    monkeypatch.setattr(
+        sdk,
+        "retrieve",
+        lambda *args, **kwargs: (
+            RetrievedChunkCandidate(
+                chunk_id="chunk-1",
+                embedding_id="emb-1",
+                score=0.9,
+                metadata={"text": "source text", "source_path": "docs/a.txt"},
+            ),
+        ),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "build_context",
+        lambda *args, **kwargs: ContextBuildResult(
+            context="source text",
+            sources=(
+                ContextSource(
+                    id="chunk-1",
+                    text="source text",
+                    metadata={"source_path": "docs/a.txt"},
+                ),
+            ),
+            token_count=2,
+        ),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "build_prompt",
+        lambda *args, **kwargs: PromptBuildResult(
+            final_prompt="[user_query]\nhello",
+            sections=(PromptSection(name="user_query", content="hello"),),
+        ),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "generate",
+        lambda *args, **kwargs: GenerationResult(
+            text="generated answer",
+            model="gpt-4.1-mini",
+            provider="openai",
+        ),
+    )
+
+    result = sdk.ask("hello")
+
+    assert result["answer"] == "generated answer"
+    assert isinstance(result["sources"], list)
+    assert result["sources"][0]["id"] == "chunk-1"
+
+
+def test_sdk_route_level_retrieval_overrides_are_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
+    sdk = FastAI()
+    captured: dict[str, object] = {}
+
+    def fake_retrieve(
+        query: str,
+        *,
+        top_k: int | None = None,
+        min_score: float | None = None,
+        dedupe_strategy: str = "chunk",
+        source_paths: tuple[str, ...] | None = None,
+        num_candidates: int | None = None,
+    ) -> tuple[RetrievedChunkCandidate, ...]:
+        captured["query"] = query
+        captured["top_k"] = top_k
+        captured["min_score"] = min_score
+        captured["dedupe_strategy"] = dedupe_strategy
+        captured["source_paths"] = source_paths
+        captured["num_candidates"] = num_candidates
+        return ()
+
+    monkeypatch.setattr(sdk, "retrieve", fake_retrieve)
+    monkeypatch.setattr(
+        sdk,
+        "build_context",
+        lambda *args, **kwargs: ContextBuildResult(context="", sources=(), token_count=0),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "build_prompt",
+        lambda *args, **kwargs: PromptBuildResult(final_prompt="prompt", sections=()),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "generate",
+        lambda *args, **kwargs: GenerationResult(
+            text="ok",
+            model="gpt-4.1-mini",
+            provider="openai",
+        ),
+    )
+
+    payload = AskRequest(
+        query="hello",
+        top_k=7,
+        min_score=0.25,
+        num_candidates=80,
+        dedupe_strategy="document",
+        source_paths=("docs/a.txt",),
+    )
+
+    response = sdk.ask_payload(payload)
+
+    assert response.answer == "ok"
+    assert captured["query"] == "hello"
+    assert captured["top_k"] == 7
+    assert captured["min_score"] == 0.25
+    assert captured["num_candidates"] == 80
+    assert captured["dedupe_strategy"] == "document"
+    assert captured["source_paths"] == ("docs/a.txt",)

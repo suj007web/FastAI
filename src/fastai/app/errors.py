@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from http import HTTPStatus
+from typing import Any, cast
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -31,6 +32,28 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
         return JSONResponse(
             status_code=HTTPStatus.BAD_REQUEST,
+            content=payload.model_dump(),
+        )
+
+    @app.exception_handler(HTTPException)
+    async def handle_http_exception(request: Request, exc: HTTPException) -> JSONResponse:
+        raw_detail = cast(Any, exc.detail)
+        code_obj: object | None = None
+        message_obj: object | None = None
+        if isinstance(raw_detail, dict):
+            code_obj = raw_detail.get("code")
+            message_obj = raw_detail.get("message")
+
+        code = code_obj if isinstance(code_obj, str) else "http_error"
+        message = message_obj if isinstance(message_obj, str) else "Request failed"
+
+        payload = ErrorResponse(
+            code=code,
+            message=message,
+            request_id=_request_id_from(request),
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
             content=payload.model_dump(),
         )
 

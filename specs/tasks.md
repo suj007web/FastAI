@@ -583,7 +583,7 @@ Done criteria:
 3. Template variables and section order are documented.
 
 ### T-020 Wire AI Route Runtime End-to-End
-Status: [ ]
+Status: [x]
 
 Objective:
 Execute query embedding, retrieval, context build, and generation on API call.

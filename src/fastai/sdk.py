@@ -10,7 +10,7 @@ from fastapi import APIRouter, FastAPI
 from sqlalchemy.orm import Session
 
 from .ai_app import AIApp, RouteHandler
-from .app.api.schemas import AskRequest, AskResponse
+from .app.api.schemas import AskRequest, AskResponse, DebugPayload, Source
 from .config import FastAIConfig, resolve_config
 from .context_builder import ContextBuildResult, build_context_payload
 from .generation import (
@@ -59,8 +59,8 @@ class FastAI:
         self._ai_app = AIApp()
 
         @self._ai_app.ai_route("/ask", name="ask")
-        def _default_ask(query: str) -> str:
-            return f"Query received: {query}"
+        def _default_ask(query: str, payload: AskRequest) -> AskResponse:
+            return self._orchestrate_ask(payload)
 
     @classmethod
     def from_env(cls) -> FastAI:
@@ -191,6 +191,14 @@ class FastAI:
         """Async query helper using registered route handlers."""
         payload = AskRequest(query=query, debug=debug)
         return await self._ai_app.execute(route_name, payload)
+
+    def ask_payload(self, payload: AskRequest, *, route_name: str = "ask") -> AskResponse:
+        """Execute ask flow from a pre-validated request payload."""
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return asyncio.run(self._ai_app.execute(route_name, payload))
+        raise RuntimeError("FastAI.ask_payload cannot be called inside an active event loop.")
 
     def add_data(self, path: str) -> IngestionSummary:
         """Run full ingestion pipeline and persist indexed artifacts."""
@@ -362,6 +370,69 @@ class FastAI:
             "llm": self.config.llm.__dict__,
             "auth": self.config.auth.__dict__,
         }
+
+    def _orchestrate_ask(self, payload: AskRequest) -> AskResponse:
+        query = payload.query.strip()
+
+        dedupe_strategy: RetrievalDedupeStrategy = payload.dedupe_strategy or "chunk"
+
+        candidates: tuple[RetrievedChunkCandidate, ...] = ()
+        try:
+            candidates = self.retrieve(
+                query,
+                top_k=payload.top_k,
+                min_score=payload.min_score,
+                dedupe_strategy=dedupe_strategy,
+                source_paths=payload.source_paths,
+                num_candidates=payload.num_candidates,
+            )
+        except Exception:
+            candidates = ()
+
+        context_result = self.build_context(
+            candidates,
+            max_context_tokens=payload.max_context_tokens,
+        )
+        prompt_result = self.build_prompt(
+            user_query=query,
+            retrieved_context=context_result.context,
+            system_instructions=payload.system_instructions,
+            route_instructions=payload.route_instructions,
+        )
+
+        answer_text = f"Query received: {query}"
+        try:
+            generated = self.generate(
+                prompt_result.final_prompt,
+                max_tokens=payload.max_tokens,
+                temperature=payload.temperature,
+            )
+            answer_text = generated.text
+        except Exception:
+            answer_text = f"Query received: {query}"
+
+        sources = [
+            Source(id=source.id, text=source.text, metadata=dict(source.metadata))
+            for source in context_result.sources
+        ]
+
+        debug_payload: DebugPayload | None = None
+        if payload.debug and bool(self.config.runtime.debug_payload_enabled):
+            debug_payload = DebugPayload(
+                retrieved_chunks=[
+                    {
+                        "chunk_id": candidate.chunk_id,
+                        "embedding_id": candidate.embedding_id,
+                        "score": candidate.score,
+                        "metadata": dict(candidate.metadata),
+                    }
+                    for candidate in candidates
+                ],
+                context=context_result.context,
+                final_prompt=prompt_result.final_prompt,
+            )
+
+        return AskResponse(answer=answer_text, sources=sources, debug=debug_payload)
 
 
 def mount_fastai_router(app: FastAPI, *, sdk: FastAI, path: str = "/ai") -> None:
