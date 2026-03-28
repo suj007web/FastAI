@@ -12,8 +12,13 @@ from sqlalchemy.orm import Session
 from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
-from .ingestion import EmbeddingAdapter, create_embedding_adapter
-from .storage import VectorStoreAdapter, select_vector_adapter
+from .ingestion import EmbeddingAdapter, IngestionSummary, create_embedding_adapter, ingest_path
+from .storage import (
+    StorageSessionManager,
+    VectorStoreAdapter,
+    create_postgres_repositories,
+    select_vector_adapter,
+)
 
 
 class FastAI:
@@ -175,9 +180,41 @@ class FastAI:
         payload = AskRequest(query=query, debug=debug)
         return await self._ai_app.execute(route_name, payload)
 
-    def add_data(self, path: str) -> None:
-        """Run ingestion discovery bootstrap using resolved ingestion configuration."""
-        self._ai_app.add_data(path, ingestion=self.config.ingestion)
+    def add_data(self, path: str) -> IngestionSummary:
+        """Run full ingestion pipeline and persist indexed artifacts."""
+        dsn = self.config.vector_store.pgvector_dsn
+        if not dsn:
+            raise ValueError(
+                "FASTAI_DB_DSN (pgvector_dsn) is required for add_data metadata persistence."
+            )
+
+        backend = (self.config.vector_store.backend or "").strip().lower()
+        embedding_model = self.config.llm.embedding_model or self.config.llm.model
+        if not embedding_model:
+            raise ValueError("Embedding model is required for add_data ingestion.")
+
+        manager = StorageSessionManager(dsn)
+        with manager.session_scope() as session:
+            repositories = create_postgres_repositories(session)
+            vector_adapter = select_vector_adapter(
+                self.config.vector_store,
+                pgvector_session=session if backend == "pgvector" else None,
+            )
+            embedding_adapter = self.create_embedding_adapter()
+            summary = ingest_path(
+                path=path,
+                namespace=self.config.vector_store.namespace or "default",
+                model_name=embedding_model,
+                ingestion_config=self.config.ingestion,
+                document_repo=repositories.documents,
+                chunk_repo=repositories.chunks,
+                embedding_repo=repositories.embeddings,
+                vector_adapter=vector_adapter,
+                embedding_adapter=embedding_adapter,
+                persist_embeddings_locally=backend != "pgvector",
+            )
+
+        return summary
 
     def create_vector_adapter(self, *, session: Session | None = None) -> VectorStoreAdapter:
         """Create configured vector adapter for the active backend."""

@@ -470,7 +470,7 @@ Done criteria:
 2. Missing/invalid key produces actionable error.
 
 ### T-014 Complete add_data End-to-End
-Status: [ ]
+Status: [x]
 
 Objective:
 Wire discovery, extraction, chunking, embedding, and persistence.

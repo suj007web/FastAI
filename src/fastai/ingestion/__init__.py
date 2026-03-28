@@ -34,6 +34,7 @@ from .extraction import (
     extract_text_from_txt,
     normalize_extracted_text,
 )
+from .pipeline import IngestionSummary, ingest_path
 
 __all__ = [
     "ChunkedText",
@@ -45,6 +46,7 @@ __all__ = [
     "ExtractedDocument",
     "LiteLLMEmbeddingAdapter",
     "IngestionDiscoveryOptions",
+    "IngestionSummary",
     "SUPPORTED_DEDUPE_MODES",
     "SUPPORTED_FAILURE_POLICIES",
     "SUPPORTED_INGESTION_EXTENSIONS",
@@ -57,6 +59,7 @@ __all__ = [
     "extract_text_from_file",
     "extract_text_from_pdf",
     "extract_text_from_txt",
+    "ingest_path",
     "normalize_extracted_text",
     "resolve_chunking_options",
     "resolve_ingestion_discovery_options",

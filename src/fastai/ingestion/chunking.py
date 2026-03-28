@@ -40,11 +40,11 @@ def resolve_chunking_options(ingestion: IngestionConfig | None = None) -> Chunki
         if cfg.chunk_size_tokens is not None
         else int(BUILTIN_INGESTION.chunk_size_tokens or 0)
     )
-    chunk_overlap = (
-        cfg.chunk_overlap_tokens
-        if cfg.chunk_overlap_tokens is not None
-        else int(BUILTIN_INGESTION.chunk_overlap_tokens or 0)
-    )
+    if cfg.chunk_overlap_tokens is not None:
+        chunk_overlap = cfg.chunk_overlap_tokens
+    else:
+        default_overlap = int(BUILTIN_INGESTION.chunk_overlap_tokens or 0)
+        chunk_overlap = min(default_overlap, max(chunk_size - 1, 0))
 
     if chunk_size <= 0:
         raise ValueError("chunk_size_tokens must be greater than zero.")

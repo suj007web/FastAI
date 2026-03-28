@@ -194,3 +194,24 @@ def test_sdk_embedding_adapter_creation_requires_provider_key() -> None:
 
     with pytest.raises(ValueError, match="OPENAI_API_KEY"):
         sdk.create_embedding_adapter()
+
+
+def test_sdk_add_data_requires_pgvector_dsn_for_metadata_persistence(tmp_path) -> None:
+    sdk = FastAI(
+        pgvector_dsn="",
+        config=FastAIConfig(
+            vector_store=VectorStoreConfig(backend="qdrant", pgvector_dsn=None),
+            llm=LLMConfig(
+                provider="openai",
+                embedding_model="text-embedding-3-small",
+                openai_api_key="sk-test",
+            ),
+        )
+    )
+
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "guide.txt").write_text("hello", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="FASTAI_DB_DSN"):
+        sdk.add_data(str(docs_dir))
