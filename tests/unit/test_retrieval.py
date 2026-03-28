@@ -8,7 +8,11 @@ from sqlalchemy import text
 
 from fastai.ingestion import ChunkEmbeddingResult, EmbeddingAdapter
 from fastai.ingestion.chunking import ChunkedText
-from fastai.retrieval import RetrievedChunkCandidate, retrieve_chunk_candidates
+from fastai.retrieval import (
+    RetrievedChunkCandidate,
+    rank_and_filter_candidates,
+    retrieve_chunk_candidates,
+)
 from fastai.storage import (
     DEFAULT_VECTOR_DIMENSION,
     Base,
@@ -105,6 +109,121 @@ def test_retrieve_chunk_candidates_returns_deterministic_order() -> None:
     )
 
     assert tuple(candidate.embedding_id for candidate in candidates) == ("emb-1", "emb-2")
+
+
+def test_retrieve_chunk_candidates_applies_score_threshold_after_query() -> None:
+    embedding_adapter = _FakeEmbeddingAdapter(_vector(1.0, 0.0))
+    vector_adapter = _FakeVectorAdapter(
+        (
+            VectorQueryMatch(embedding_id="emb-hi", chunk_id="chunk-hi", score=0.92),
+            VectorQueryMatch(embedding_id="emb-lo", chunk_id="chunk-lo", score=0.35),
+        )
+    )
+
+    candidates = retrieve_chunk_candidates(
+        query="policy",
+        namespace="default",
+        embedding_adapter=embedding_adapter,
+        vector_adapter=vector_adapter,
+        top_k=3,
+        min_score=0.5,
+    )
+
+    assert tuple(candidate.embedding_id for candidate in candidates) == ("emb-hi",)
+
+
+def test_rank_and_filter_candidates_dedupes_by_chunk() -> None:
+    candidates = (
+        RetrievedChunkCandidate(
+            chunk_id="chunk-a",
+            embedding_id="emb-1",
+            score=0.95,
+            metadata={"source_path": "docs/a.txt"},
+        ),
+        RetrievedChunkCandidate(
+            chunk_id="chunk-a",
+            embedding_id="emb-2",
+            score=0.90,
+            metadata={"source_path": "docs/a.txt"},
+        ),
+        RetrievedChunkCandidate(
+            chunk_id="chunk-b",
+            embedding_id="emb-3",
+            score=0.89,
+            metadata={"source_path": "docs/b.txt"},
+        ),
+    )
+
+    filtered = rank_and_filter_candidates(
+        candidates,
+        top_k=3,
+        min_score=0.0,
+        dedupe_strategy="chunk",
+    )
+
+    assert tuple((item.chunk_id, item.embedding_id) for item in filtered) == (
+        ("chunk-a", "emb-1"),
+        ("chunk-b", "emb-3"),
+    )
+
+
+def test_rank_and_filter_candidates_dedupes_by_document_source_path() -> None:
+    candidates = (
+        RetrievedChunkCandidate(
+            chunk_id="chunk-a1",
+            embedding_id="emb-a1",
+            score=0.90,
+            metadata={"source_path": "docs/a.txt"},
+        ),
+        RetrievedChunkCandidate(
+            chunk_id="chunk-a2",
+            embedding_id="emb-a2",
+            score=0.85,
+            metadata={"source_path": "docs/a.txt"},
+        ),
+        RetrievedChunkCandidate(
+            chunk_id="chunk-b1",
+            embedding_id="emb-b1",
+            score=0.80,
+            metadata={"source_path": "docs/b.txt"},
+        ),
+    )
+
+    filtered = rank_and_filter_candidates(
+        candidates,
+        top_k=3,
+        min_score=0.0,
+        dedupe_strategy="document",
+    )
+
+    assert tuple(item.chunk_id for item in filtered) == ("chunk-a1", "chunk-b1")
+
+
+def test_rank_and_filter_candidates_filters_allowed_source_paths() -> None:
+    candidates = (
+        RetrievedChunkCandidate(
+            chunk_id="chunk-a",
+            embedding_id="emb-a",
+            score=0.91,
+            metadata={"source_path": "docs/a.txt"},
+        ),
+        RetrievedChunkCandidate(
+            chunk_id="chunk-b",
+            embedding_id="emb-b",
+            score=0.90,
+            metadata={"source_path": "docs/b.txt"},
+        ),
+    )
+
+    filtered = rank_and_filter_candidates(
+        candidates,
+        top_k=3,
+        min_score=0.0,
+        dedupe_strategy="none",
+        source_paths=("docs/b.txt",),
+    )
+
+    assert tuple(item.chunk_id for item in filtered) == ("chunk-b",)
 
 
 def test_retrieve_chunk_candidates_pgvector_integration(

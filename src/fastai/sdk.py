@@ -13,7 +13,11 @@ from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
 from .ingestion import EmbeddingAdapter, IngestionSummary, create_embedding_adapter, ingest_path
-from .retrieval import RetrievedChunkCandidate, retrieve_chunk_candidates
+from .retrieval import (
+    RetrievalDedupeStrategy,
+    RetrievedChunkCandidate,
+    retrieve_chunk_candidates,
+)
 from .storage import (
     StorageSessionManager,
     VectorStoreAdapter,
@@ -231,11 +235,19 @@ class FastAI:
         *,
         top_k: int | None = None,
         min_score: float | None = None,
+        dedupe_strategy: RetrievalDedupeStrategy = "chunk",
+        source_paths: tuple[str, ...] | None = None,
+        num_candidates: int | None = None,
     ) -> tuple[RetrievedChunkCandidate, ...]:
         """Run query embedding and vector search for top-k chunk candidates."""
         resolved_top_k = top_k if top_k is not None else int(self.config.retrieval.top_k or 0)
         resolved_min_score = (
             min_score if min_score is not None else float(self.config.retrieval.min_score or 0.0)
+        )
+        resolved_num_candidates = (
+            num_candidates
+            if num_candidates is not None
+            else int(self.config.retrieval.num_candidates or resolved_top_k)
         )
         namespace = self.config.vector_store.namespace or "default"
         embedding_adapter = self.create_embedding_adapter()
@@ -261,6 +273,9 @@ class FastAI:
                     vector_adapter=vector_adapter,
                     top_k=resolved_top_k,
                     min_score=resolved_min_score,
+                    dedupe_strategy=dedupe_strategy,
+                    source_paths=source_paths,
+                    candidate_limit=resolved_num_candidates,
                 )
 
         vector_adapter = select_vector_adapter(self.config.vector_store)
@@ -271,6 +286,9 @@ class FastAI:
             vector_adapter=vector_adapter,
             top_k=resolved_top_k,
             min_score=resolved_min_score,
+            dedupe_strategy=dedupe_strategy,
+            source_paths=source_paths,
+            candidate_limit=resolved_num_candidates,
         )
 
     def summary(self) -> dict[str, object]:

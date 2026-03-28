@@ -18,7 +18,12 @@ from .ingestion import (
 	create_embedding_adapter,
 )
 from .plugin import get_fastai_router, mount_fastai_router
-from .retrieval import RetrievedChunkCandidate, retrieve_chunk_candidates
+from .retrieval import (
+	RetrievalDedupeStrategy,
+	RetrievedChunkCandidate,
+	rank_and_filter_candidates,
+	retrieve_chunk_candidates,
+)
 from .sdk import FastAI
 from .storage import (
 	DEFAULT_VECTOR_DIMENSION,
@@ -60,6 +65,7 @@ __all__ = [
 	"LiteLLMEmbeddingAdapter",
 	"RetrievedChunkCandidate",
 	"RetrievalConfig",
+	"RetrievalDedupeStrategy",
 	"RuntimeConfig",
 	"VectorStoreConfig",
 	"ChunkRecord",
@@ -92,6 +98,7 @@ __all__ = [
 	"get_fastai_router",
 	"mount_fastai_router",
 	"retrieve_chunk_candidates",
+	"rank_and_filter_candidates",
 	"select_vector_adapter",
 ]
 

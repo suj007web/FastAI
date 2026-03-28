@@ -508,7 +508,7 @@ Done criteria:
 2. Retrieval integration test passes on sample corpus.
 
 ### T-016 Implement Ranking and Filtering Policy
-Status: [ ]
+Status: [x]
 
 Objective:
 Apply relevance thresholds and source filtering before context build.
