@@ -13,6 +13,11 @@ from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
 from .context_builder import ContextBuildResult, build_context_payload
+from .generation import (
+    GenerationProvider,
+    GenerationResult,
+    create_generation_provider,
+)
 from .ingestion import EmbeddingAdapter, IngestionSummary, create_embedding_adapter, ingest_path
 from .retrieval import (
     RetrievalDedupeStrategy,
@@ -230,6 +235,10 @@ class FastAI:
         """Create configured embedding adapter for the active provider."""
         return create_embedding_adapter(self.config.llm)
 
+    def create_generation_provider(self) -> GenerationProvider:
+        """Create configured generation provider for the active provider/model."""
+        return create_generation_provider(self.config.llm)
+
     def retrieve(
         self,
         query: str,
@@ -307,6 +316,23 @@ class FastAI:
         return build_context_payload(
             candidates,
             max_context_tokens=resolved_max_context_tokens,
+        )
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        system_prompt: str | None = None,
+        max_tokens: int | None = None,
+        temperature: float | None = None,
+    ) -> GenerationResult:
+        """Generate text through the configured provider implementation."""
+        provider = self.create_generation_provider()
+        return provider.generate(
+            prompt,
+            system_prompt=system_prompt,
+            max_tokens=max_tokens,
+            temperature=temperature,
         )
 
     def summary(self) -> dict[str, object]:

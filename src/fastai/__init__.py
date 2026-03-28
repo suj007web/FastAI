@@ -17,6 +17,14 @@ from .context_builder import (
 	build_context_payload,
 	estimate_text_tokens,
 )
+from .generation import (
+	FastAIGenerationError,
+	GenerationProvider,
+	GenerationProviderError,
+	GenerationResult,
+	LiteLLMGenerationProvider,
+	create_generation_provider,
+)
 from .ingestion import (
 	ChunkEmbeddingResult,
 	EmbeddingAdapter,
@@ -66,6 +74,11 @@ __all__ = [
 	"FastAIConfig",
 	"IngestionConfig",
 	"LLMConfig",
+	"FastAIGenerationError",
+	"GenerationProvider",
+	"GenerationProviderError",
+	"GenerationResult",
+	"LiteLLMGenerationProvider",
 	"ContextBuildResult",
 	"ContextSource",
 	"ChunkEmbeddingResult",
@@ -101,6 +114,7 @@ __all__ = [
 	"__version__",
 	"ai_route",
 	"build_context_payload",
+	"create_generation_provider",
 	"create_embedding_adapter",
 	"create_postgres_repositories",
 	"create_fastai_client",

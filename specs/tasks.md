@@ -546,7 +546,7 @@ Done criteria:
 ## Phase 5: LLM Generation and Route Execution
 
 ### T-018 Implement LLM Provider Abstraction
-Status: [ ]
+Status: [x]
 
 Objective:
 Create provider-agnostic generation interface backed by LiteLLM.
