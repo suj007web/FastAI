@@ -13,6 +13,7 @@ from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
 from .ingestion import EmbeddingAdapter, IngestionSummary, create_embedding_adapter, ingest_path
+from .retrieval import RetrievedChunkCandidate, retrieve_chunk_candidates
 from .storage import (
     StorageSessionManager,
     VectorStoreAdapter,
@@ -223,6 +224,54 @@ class FastAI:
     def create_embedding_adapter(self) -> EmbeddingAdapter:
         """Create configured embedding adapter for the active provider."""
         return create_embedding_adapter(self.config.llm)
+
+    def retrieve(
+        self,
+        query: str,
+        *,
+        top_k: int | None = None,
+        min_score: float | None = None,
+    ) -> tuple[RetrievedChunkCandidate, ...]:
+        """Run query embedding and vector search for top-k chunk candidates."""
+        resolved_top_k = top_k if top_k is not None else int(self.config.retrieval.top_k or 0)
+        resolved_min_score = (
+            min_score if min_score is not None else float(self.config.retrieval.min_score or 0.0)
+        )
+        namespace = self.config.vector_store.namespace or "default"
+        embedding_adapter = self.create_embedding_adapter()
+
+        backend = (self.config.vector_store.backend or "").strip().lower()
+        if backend == "pgvector":
+            dsn = self.config.vector_store.pgvector_dsn
+            if not dsn:
+                raise ValueError(
+                    "FASTAI_DB_DSN (pgvector_dsn) is required for pgvector retrieval."
+                )
+
+            manager = StorageSessionManager(dsn)
+            with manager.session_scope() as session:
+                vector_adapter = select_vector_adapter(
+                    self.config.vector_store,
+                    pgvector_session=session,
+                )
+                return retrieve_chunk_candidates(
+                    query=query,
+                    namespace=namespace,
+                    embedding_adapter=embedding_adapter,
+                    vector_adapter=vector_adapter,
+                    top_k=resolved_top_k,
+                    min_score=resolved_min_score,
+                )
+
+        vector_adapter = select_vector_adapter(self.config.vector_store)
+        return retrieve_chunk_candidates(
+            query=query,
+            namespace=namespace,
+            embedding_adapter=embedding_adapter,
+            vector_adapter=vector_adapter,
+            top_k=resolved_top_k,
+            min_score=resolved_min_score,
+        )
 
     def summary(self) -> dict[str, object]:
         """Return resolved configuration as a serializable dictionary."""

@@ -490,7 +490,7 @@ Done criteria:
 ## Phase 4: Retrieval and Context Building
 
 ### T-015 Implement Query Embedding and Vector Search
-Status: [ ]
+Status: [x]
 
 Objective:
 Retrieve top-k relevant chunks for incoming query.
