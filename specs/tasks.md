@@ -452,7 +452,7 @@ Done criteria:
 2. Chunk metadata is complete for source reconstruction.
 
 ### T-013 Implement Embedding Adapter Integration
-Status: [ ]
+Status: [x]
 
 Objective:
 Generate embeddings through provider-agnostic adapter.

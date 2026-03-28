@@ -18,6 +18,12 @@ from .discovery import (
     split_supported_paths,
     validate_ingestion_path,
 )
+from .embeddings import (
+    ChunkEmbeddingResult,
+    EmbeddingAdapter,
+    LiteLLMEmbeddingAdapter,
+    create_embedding_adapter,
+)
 from .extraction import (
     ExtractedDocument,
     ExtractionBatchResult,
@@ -31,10 +37,13 @@ from .extraction import (
 
 __all__ = [
     "ChunkedText",
+    "ChunkEmbeddingResult",
     "ChunkingOptions",
+    "EmbeddingAdapter",
     "ExtractionBatchResult",
     "ExtractionFailure",
     "ExtractedDocument",
+    "LiteLLMEmbeddingAdapter",
     "IngestionDiscoveryOptions",
     "SUPPORTED_DEDUPE_MODES",
     "SUPPORTED_FAILURE_POLICIES",
@@ -43,6 +52,7 @@ __all__ = [
     "chunk_text",
     "discover_ingestion_files",
     "discover_paths",
+    "create_embedding_adapter",
     "extract_text_batch",
     "extract_text_from_file",
     "extract_text_from_pdf",

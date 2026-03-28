@@ -168,3 +168,29 @@ def test_sdk_validates_ingestion_failure_policy() -> None:
 def test_sdk_validates_ingestion_dedupe_mode() -> None:
     with pytest.raises(ValueError, match="dedupe_mode"):
         FastAI(config=FastAIConfig(ingestion=IngestionConfig(dedupe_mode="none")))
+
+
+def test_sdk_can_create_embedding_adapter_from_llm_config() -> None:
+    sdk = FastAI(
+        config=FastAIConfig(
+            llm=LLMConfig(
+                provider="openai",
+                embedding_model="text-embedding-3-small",
+                openai_api_key="sk-test",
+            )
+        )
+    )
+
+    adapter = sdk.create_embedding_adapter()
+    assert adapter.__class__.__name__ == "LiteLLMEmbeddingAdapter"
+
+
+def test_sdk_embedding_adapter_creation_requires_provider_key() -> None:
+    sdk = FastAI(
+        config=FastAIConfig(
+            llm=LLMConfig(provider="openai", embedding_model="text-embedding-3-small")
+        )
+    )
+
+    with pytest.raises(ValueError, match="OPENAI_API_KEY"):
+        sdk.create_embedding_adapter()

@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from .ai_app import AIApp, RouteHandler
 from .app.api.schemas import AskRequest, AskResponse
 from .config import FastAIConfig, resolve_config
+from .ingestion import EmbeddingAdapter, create_embedding_adapter
 from .storage import VectorStoreAdapter, select_vector_adapter
 
 
@@ -181,6 +182,10 @@ class FastAI:
     def create_vector_adapter(self, *, session: Session | None = None) -> VectorStoreAdapter:
         """Create configured vector adapter for the active backend."""
         return select_vector_adapter(self.config.vector_store, pgvector_session=session)
+
+    def create_embedding_adapter(self) -> EmbeddingAdapter:
+        """Create configured embedding adapter for the active provider."""
+        return create_embedding_adapter(self.config.llm)
 
     def summary(self) -> dict[str, object]:
         """Return resolved configuration as a serializable dictionary."""

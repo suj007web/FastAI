@@ -11,6 +11,12 @@ from .config import (
 	RuntimeConfig,
 	VectorStoreConfig,
 )
+from .ingestion import (
+	ChunkEmbeddingResult,
+	EmbeddingAdapter,
+	LiteLLMEmbeddingAdapter,
+	create_embedding_adapter,
+)
 from .plugin import get_fastai_router, mount_fastai_router
 from .sdk import FastAI
 from .storage import (
@@ -19,6 +25,12 @@ from .storage import (
 	ChunkModel,
 	ChunkRecord,
 	ChunkRepository,
+	DocumentModel,
+	DocumentRecord,
+	DocumentRepository,
+	EmbeddingModel,
+	EmbeddingRecord,
+	EmbeddingRepository,
 	MongoDBAtlasVectorAdapter,
 	PgVectorAdapter,
 	PostgresChunkRepository,
@@ -26,12 +38,6 @@ from .storage import (
 	PostgresEmbeddingRepository,
 	PostgresRepositoryBundle,
 	QdrantVectorAdapter,
-	DocumentModel,
-	DocumentRecord,
-	DocumentRepository,
-	EmbeddingModel,
-	EmbeddingRecord,
-	EmbeddingRepository,
 	RouteDefinitionModel,
 	StorageSessionManager,
 	VectorQueryMatch,
@@ -48,6 +54,9 @@ __all__ = [
 	"FastAIConfig",
 	"IngestionConfig",
 	"LLMConfig",
+	"ChunkEmbeddingResult",
+	"EmbeddingAdapter",
+	"LiteLLMEmbeddingAdapter",
 	"RetrievalConfig",
 	"RuntimeConfig",
 	"VectorStoreConfig",
@@ -75,6 +84,7 @@ __all__ = [
 	"VectorStoreAdapter",
 	"__version__",
 	"ai_route",
+	"create_embedding_adapter",
 	"create_postgres_repositories",
 	"create_fastai_client",
 	"get_fastai_router",
