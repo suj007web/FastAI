@@ -1,5 +1,12 @@
 """Ingestion helpers for path validation and file discovery."""
 
+from .chunking import (
+    ChunkedText,
+    ChunkingOptions,
+    chunk_extracted_documents,
+    chunk_text,
+    resolve_chunking_options,
+)
 from .discovery import (
     SUPPORTED_DEDUPE_MODES,
     SUPPORTED_FAILURE_POLICIES,
@@ -23,6 +30,8 @@ from .extraction import (
 )
 
 __all__ = [
+    "ChunkedText",
+    "ChunkingOptions",
     "ExtractionBatchResult",
     "ExtractionFailure",
     "ExtractedDocument",
@@ -30,6 +39,8 @@ __all__ = [
     "SUPPORTED_DEDUPE_MODES",
     "SUPPORTED_FAILURE_POLICIES",
     "SUPPORTED_INGESTION_EXTENSIONS",
+    "chunk_extracted_documents",
+    "chunk_text",
     "discover_ingestion_files",
     "discover_paths",
     "extract_text_batch",
@@ -37,6 +48,7 @@ __all__ = [
     "extract_text_from_pdf",
     "extract_text_from_txt",
     "normalize_extracted_text",
+    "resolve_chunking_options",
     "resolve_ingestion_discovery_options",
     "split_supported_paths",
     "validate_ingestion_path",

@@ -434,7 +434,7 @@ Done criteria:
 2. Extraction failures are isolated per-file.
 
 ### T-012 Implement Deterministic Chunking
-Status: [ ]
+Status: [x]
 
 Objective:
 Chunk extracted text with stable ordering and policy.
