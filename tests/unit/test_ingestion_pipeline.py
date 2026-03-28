@@ -167,6 +167,10 @@ def test_ingest_path_indexes_txt_and_pdf_end_to_end(tmp_path: Path) -> None:
     assert len(chunk_repo.items) == summary.chunks
     assert len(embedding_repo.items) == summary.embeddings
     assert vector_adapter.namespaces == ["default"]
+    assert any(
+        isinstance(embedding.metadata.get("text"), str) and embedding.metadata.get("text")
+        for embedding in embedding_repo.items.values()
+    )
 
 
 def test_ingest_path_reports_failed_files_with_continue_policy(tmp_path: Path) -> None:

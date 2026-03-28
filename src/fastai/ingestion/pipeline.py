@@ -142,6 +142,13 @@ def ingest_path(
         ): chunk.id
         for chunk in chunks
     }
+    chunk_by_signature: dict[tuple[str, int], ChunkRecord] = {
+        (
+            _metadata_string(chunk.metadata, "source_path"),
+            _metadata_int(chunk.metadata, "chunk_index"),
+        ): chunk
+        for chunk in chunks
+    }
 
     embeddings: list[EmbeddingRecord] = []
     for item in embedded:
@@ -150,15 +157,22 @@ def ingest_path(
         signature = (source_path, chunk_index)
         if signature not in chunk_id_by_signature:
             continue
+        chunk = chunk_by_signature.get(signature)
+        if chunk is None:
+            continue
+
         chunk_id = chunk_id_by_signature[signature]
         embedding_id = _sha256(f"{chunk_id}:{model_name}")[:64]
+        metadata = dict(item.metadata)
+        metadata.setdefault("document_id", chunk.document_id)
+        metadata.setdefault("text", chunk.text)
         embeddings.append(
             EmbeddingRecord(
                 id=embedding_id,
                 chunk_id=chunk_id,
                 values=item.values,
                 model=model_name,
-                metadata=dict(item.metadata),
+                metadata=metadata,
             )
         )
 
