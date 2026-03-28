@@ -379,7 +379,7 @@ Done criteria:
 ## Phase 3: Ingestion Pipeline
 
 ### T-010 Implement File Discovery and Validation
-Status: [ ]
+Status: [x]
 
 Objective:
 Support local file and directory ingestion for txt and PDF.

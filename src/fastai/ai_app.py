@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import inspect
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from fastapi import APIRouter, FastAPI
 
 from .app.api.schemas import AskRequest, AskResponse
+from .ingestion import discover_ingestion_files
 
 HandlerReturn = str | AskResponse | dict[str, object]
 RouteHandler = Callable[[str], HandlerReturn | Awaitable[HandlerReturn]]
+LOGGER = logging.getLogger("fastai.ingestion")
 
 
 @dataclass(frozen=True)
@@ -85,9 +88,12 @@ class AIApp:
         return tuple(binding for binding, _ in self._routes.values())
 
     def add_data(self, path: str) -> None:
-        """Placeholder for ingestion entrypoint until pipeline tasks are complete."""
-        raise NotImplementedError(
-            "add_data is not implemented yet. Complete ingestion pipeline tasks first."
+        """Validate and discover supported files for ingestion bootstrap."""
+        discovered_files = discover_ingestion_files(path)
+        LOGGER.info(
+            "Ingestion discovery completed: %d supported file(s) found for path '%s'.",
+            len(discovered_files),
+            path,
         )
 
     @staticmethod

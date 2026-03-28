@@ -86,12 +86,10 @@ def test_library_style_execution_uses_registered_handler() -> None:
     asyncio.run(_run())
 
 
-def test_add_data_placeholder_raises_clear_not_implemented_error() -> None:
+def test_add_data_discovers_files_without_raising(tmp_path) -> None:
     ai_app = AIApp()
+    docs_dir = tmp_path / "docs"
+    docs_dir.mkdir()
+    (docs_dir / "guide.txt").write_text("hello", encoding="utf-8")
 
-    try:
-        ai_app.add_data("docs/")
-    except NotImplementedError as exc:
-        assert "add_data is not implemented yet" in str(exc)
-    else:
-        raise AssertionError("Expected NotImplementedError")
+    ai_app.add_data(str(docs_dir))
