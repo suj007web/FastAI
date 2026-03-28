@@ -19,6 +19,7 @@ from .generation import (
     create_generation_provider,
 )
 from .ingestion import EmbeddingAdapter, IngestionSummary, create_embedding_adapter, ingest_path
+from .prompting import PromptBuildResult, assemble_prompt
 from .retrieval import (
     RetrievalDedupeStrategy,
     RetrievedChunkCandidate,
@@ -316,6 +317,22 @@ class FastAI:
         return build_context_payload(
             candidates,
             max_context_tokens=resolved_max_context_tokens,
+        )
+
+    def build_prompt(
+        self,
+        *,
+        user_query: str,
+        retrieved_context: str,
+        system_instructions: str | None = None,
+        route_instructions: str | None = None,
+    ) -> PromptBuildResult:
+        """Build deterministic final prompt from query, instructions, and context."""
+        return assemble_prompt(
+            user_query=user_query,
+            retrieved_context=retrieved_context,
+            system_instructions=system_instructions,
+            route_instructions=route_instructions,
         )
 
     def generate(

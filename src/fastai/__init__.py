@@ -32,6 +32,12 @@ from .ingestion import (
 	create_embedding_adapter,
 )
 from .plugin import get_fastai_router, mount_fastai_router
+from .prompting import (
+	PROMPT_SECTION_ORDER,
+	PromptBuildResult,
+	PromptSection,
+	assemble_prompt,
+)
 from .retrieval import (
 	RetrievalDedupeStrategy,
 	RetrievedChunkCandidate,
@@ -79,6 +85,9 @@ __all__ = [
 	"GenerationProviderError",
 	"GenerationResult",
 	"LiteLLMGenerationProvider",
+	"PROMPT_SECTION_ORDER",
+	"PromptBuildResult",
+	"PromptSection",
 	"ContextBuildResult",
 	"ContextSource",
 	"ChunkEmbeddingResult",
@@ -121,6 +130,7 @@ __all__ = [
 	"estimate_text_tokens",
 	"get_fastai_router",
 	"mount_fastai_router",
+	"assemble_prompt",
 	"retrieve_chunk_candidates",
 	"rank_and_filter_candidates",
 	"select_vector_adapter",

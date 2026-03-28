@@ -564,7 +564,7 @@ Done criteria:
 2. Provider errors surface as structured internal exceptions.
 
 ### T-019 Implement Prompt Construction Pipeline
-Status: [ ]
+Status: [x]
 
 Objective:
 Assemble final prompt from query, instructions, and retrieved context.
