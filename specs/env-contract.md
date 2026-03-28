@@ -76,6 +76,8 @@ Defines all environment variables required or supported by FastAI MVP.
 7. FASTAI_VECTOR_BACKEND selects the vector storage adapter without changing application route code.
 8. Data ownership remains with the developer-selected backend.
 9. FASTAI_INGESTION_FAILURE_POLICY=continue skips failed files and reports counts; fail_fast aborts ingestion immediately.
+10. FASTAI_INGESTION_DEDUPE_MODE=checksum_path dedupes by resolved path identity.
+11. FASTAI_INGESTION_DEDUPE_MODE=checksum_only dedupes by file content hash.
 
 ## Minimal Onboarding Contract
 For default developer onboarding, change only:

@@ -27,6 +27,45 @@ from .types import (
     VectorStoreConfig,
 )
 
+SUPPORTED_INGESTION_FAILURE_POLICIES = frozenset({"continue", "fail_fast"})
+SUPPORTED_INGESTION_DEDUPE_MODES = frozenset({"checksum_path", "checksum_only"})
+
+
+def _normalize_csv(values: tuple[str, ...] | None) -> tuple[str, ...]:
+    if values is None:
+        return ()
+    return tuple(item.strip() for item in values if item.strip())
+
+
+def _validate_ingestion(ingestion: IngestionConfig) -> IngestionConfig:
+    if ingestion.max_files is None or ingestion.max_files <= 0:
+        raise ValueError("Ingestion max_files must be greater than zero.")
+
+    failure_policy = (ingestion.failure_policy or "").strip().lower()
+    if failure_policy not in SUPPORTED_INGESTION_FAILURE_POLICIES:
+        raise ValueError(
+            "Unsupported ingestion failure_policy. Expected one of "
+            f"{sorted(SUPPORTED_INGESTION_FAILURE_POLICIES)}; received '{failure_policy}'."
+        )
+
+    dedupe_mode = (ingestion.dedupe_mode or "").strip().lower()
+    if dedupe_mode not in SUPPORTED_INGESTION_DEDUPE_MODES:
+        raise ValueError(
+            "Unsupported ingestion dedupe_mode. Expected one of "
+            f"{sorted(SUPPORTED_INGESTION_DEDUPE_MODES)}; received '{dedupe_mode}'."
+        )
+
+    return IngestionConfig(
+        recursive=ingestion.recursive,
+        max_files=ingestion.max_files,
+        include_globs=_normalize_csv(ingestion.include_globs),
+        exclude_globs=_normalize_csv(ingestion.exclude_globs),
+        failure_policy=failure_policy,
+        dedupe_mode=dedupe_mode,
+        chunk_size_tokens=ingestion.chunk_size_tokens,
+        chunk_overlap_tokens=ingestion.chunk_overlap_tokens,
+    )
+
 
 def _normalize_profile(value: str | None) -> str:
     candidate = (value or BUILTIN_RUNTIME.profile or "balanced").strip().lower()
@@ -303,6 +342,7 @@ def resolve_config(
             BUILTIN_INGESTION.chunk_overlap_tokens,
         ),
     )
+    ingestion = _validate_ingestion(ingestion)
 
     llm_provider = pick_required(
         override_str(overrides, "provider"),

@@ -397,7 +397,7 @@ Done criteria:
 2. Unsupported files are skipped without crash.
 
 ### T-010A Implement Ingestion Configuration Controls
-Status: [ ]
+Status: [x]
 
 Objective:
 Expose ingestion tuning for advanced users while preserving safe defaults.

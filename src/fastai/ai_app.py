@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from fastapi import APIRouter, FastAPI
 
 from .app.api.schemas import AskRequest, AskResponse
-from .ingestion import discover_ingestion_files
+from .config.types import IngestionConfig
+from .ingestion import discover_ingestion_files, resolve_ingestion_discovery_options
 
 HandlerReturn = str | AskResponse | dict[str, object]
 RouteHandler = Callable[[str], HandlerReturn | Awaitable[HandlerReturn]]
@@ -87,9 +88,10 @@ class AIApp:
         """Expose immutable list of registered route metadata."""
         return tuple(binding for binding, _ in self._routes.values())
 
-    def add_data(self, path: str) -> None:
+    def add_data(self, path: str, *, ingestion: IngestionConfig | None = None) -> None:
         """Validate and discover supported files for ingestion bootstrap."""
-        discovered_files = discover_ingestion_files(path)
+        options = resolve_ingestion_discovery_options(ingestion)
+        discovered_files = discover_ingestion_files(path, options=options)
         LOGGER.info(
             "Ingestion discovery completed: %d supported file(s) found for path '%s'.",
             len(discovered_files),

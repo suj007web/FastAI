@@ -158,3 +158,13 @@ def test_sdk_accepts_advanced_typed_sections() -> None:
     assert sdk.config.ingestion.max_files == 2000
     assert sdk.config.ingestion.failure_policy == "fail_fast"
     assert sdk.config.retrieval.num_candidates == 200
+
+
+def test_sdk_validates_ingestion_failure_policy() -> None:
+    with pytest.raises(ValueError, match="failure_policy"):
+        FastAI(config=FastAIConfig(ingestion=IngestionConfig(failure_policy="abort")))
+
+
+def test_sdk_validates_ingestion_dedupe_mode() -> None:
+    with pytest.raises(ValueError, match="dedupe_mode"):
+        FastAI(config=FastAIConfig(ingestion=IngestionConfig(dedupe_mode="none")))

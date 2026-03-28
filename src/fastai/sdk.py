@@ -175,8 +175,8 @@ class FastAI:
         return await self._ai_app.execute(route_name, payload)
 
     def add_data(self, path: str) -> None:
-        """Forward ingestion placeholder call until ingestion pipeline is implemented."""
-        self._ai_app.add_data(path)
+        """Run ingestion discovery bootstrap using resolved ingestion configuration."""
+        self._ai_app.add_data(path, ingestion=self.config.ingestion)
 
     def create_vector_adapter(self, *, session: Session | None = None) -> VectorStoreAdapter:
         """Create configured vector adapter for the active backend."""

@@ -250,6 +250,11 @@ What this gives you:
 2. Immediate halt on extraction/indexing errors.
 3. Better control over chunking quality.
 
+Validated ingestion control values:
+1. FASTAI_INGESTION_FAILURE_POLICY: continue or fail_fast.
+2. FASTAI_INGESTION_DEDUPE_MODE: checksum_path or checksum_only.
+3. FASTAI_INGESTION_MAX_FILES: positive integer greater than zero.
+
 ## Effective Config Resolution
 1. SDK config object override
 2. Explicit environment variable override

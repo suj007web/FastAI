@@ -4,10 +4,15 @@ from pathlib import Path
 
 import pytest
 
+from fastai.config import IngestionConfig
 from fastai.ingestion import (
+    SUPPORTED_DEDUPE_MODES,
+    SUPPORTED_FAILURE_POLICIES,
     SUPPORTED_INGESTION_EXTENSIONS,
+    IngestionDiscoveryOptions,
     discover_ingestion_files,
     discover_paths,
+    resolve_ingestion_discovery_options,
     split_supported_paths,
     validate_ingestion_path,
 )
@@ -51,6 +56,25 @@ def test_discover_ingestion_files_skips_unsupported_with_warning(
     assert "notes.md" in caplog.text
 
 
+def test_discover_ingestion_files_fail_fast_on_unsupported_file(tmp_path: Path) -> None:
+    root = tmp_path / "corpus"
+    root.mkdir()
+    (root / "ok.txt").write_text("ok", encoding="utf-8")
+    (root / "notes.md").write_text("skip", encoding="utf-8")
+
+    options = IngestionDiscoveryOptions(
+        recursive=True,
+        include_globs=(),
+        exclude_globs=(),
+        max_files=100,
+        failure_policy="fail_fast",
+        dedupe_mode="checksum_path",
+    )
+
+    with pytest.raises(RuntimeError, match="Unsupported file discovered"):
+        discover_ingestion_files(str(root), options=options)
+
+
 def test_discover_paths_non_recursive_only_reads_current_directory(tmp_path: Path) -> None:
     root = tmp_path / "corpus"
     nested = root / "nested"
@@ -60,6 +84,105 @@ def test_discover_paths_non_recursive_only_reads_current_directory(tmp_path: Pat
 
     discovered = discover_paths(root, recursive=False)
     assert tuple(path.name for path in discovered) == ("top.txt",)
+
+
+def test_discover_ingestion_files_respects_include_and_exclude_globs(tmp_path: Path) -> None:
+    root = tmp_path / "corpus"
+    docs = root / "docs"
+    archived = docs / "archive"
+    archived.mkdir(parents=True)
+    (docs / "a.txt").write_text("a", encoding="utf-8")
+    (docs / "b.pdf").write_text("b", encoding="utf-8")
+    (archived / "c.txt").write_text("c", encoding="utf-8")
+
+    options = IngestionDiscoveryOptions(
+        recursive=True,
+        include_globs=("docs/*", "docs/**/*.pdf"),
+        exclude_globs=("docs/archive/*",),
+        max_files=100,
+        failure_policy="continue",
+        dedupe_mode="checksum_path",
+    )
+
+    discovered = discover_ingestion_files(str(root), options=options)
+    assert tuple(path.relative_to(root).as_posix() for path in discovered) == (
+        "docs/a.txt",
+        "docs/b.pdf",
+    )
+
+
+def test_discover_ingestion_files_respects_max_files_continue_policy(tmp_path: Path) -> None:
+    root = tmp_path / "corpus"
+    root.mkdir()
+    (root / "a.txt").write_text("a", encoding="utf-8")
+    (root / "b.txt").write_text("b", encoding="utf-8")
+    (root / "c.pdf").write_text("c", encoding="utf-8")
+
+    options = IngestionDiscoveryOptions(
+        recursive=True,
+        include_globs=(),
+        exclude_globs=(),
+        max_files=2,
+        failure_policy="continue",
+        dedupe_mode="checksum_path",
+    )
+
+    discovered = discover_ingestion_files(str(root), options=options)
+    assert tuple(path.name for path in discovered) == ("a.txt", "b.txt")
+
+
+def test_discover_ingestion_files_respects_max_files_fail_fast_policy(tmp_path: Path) -> None:
+    root = tmp_path / "corpus"
+    root.mkdir()
+    (root / "a.txt").write_text("a", encoding="utf-8")
+    (root / "b.txt").write_text("b", encoding="utf-8")
+
+    options = IngestionDiscoveryOptions(
+        recursive=True,
+        include_globs=(),
+        exclude_globs=(),
+        max_files=1,
+        failure_policy="fail_fast",
+        dedupe_mode="checksum_path",
+    )
+
+    with pytest.raises(RuntimeError, match="max_files=1"):
+        discover_ingestion_files(str(root), options=options)
+
+
+def test_discover_ingestion_files_dedupe_checksum_only(tmp_path: Path) -> None:
+    root = tmp_path / "corpus"
+    root.mkdir()
+    (root / "a.txt").write_text("same", encoding="utf-8")
+    (root / "b.txt").write_text("same", encoding="utf-8")
+
+    options = IngestionDiscoveryOptions(
+        recursive=True,
+        include_globs=(),
+        exclude_globs=(),
+        max_files=10,
+        failure_policy="continue",
+        dedupe_mode="checksum_only",
+    )
+
+    discovered = discover_ingestion_files(str(root), options=options)
+    assert tuple(path.name for path in discovered) == ("a.txt",)
+
+
+def test_resolve_ingestion_discovery_options_validates_controls() -> None:
+    assert SUPPORTED_FAILURE_POLICIES == frozenset({"continue", "fail_fast"})
+    assert SUPPORTED_DEDUPE_MODES == frozenset({"checksum_path", "checksum_only"})
+
+    options = resolve_ingestion_discovery_options()
+    assert options.recursive is True
+    assert options.max_files == 10000
+    assert options.failure_policy == "continue"
+    assert options.dedupe_mode == "checksum_path"
+
+    with pytest.raises(ValueError, match="max_files"):
+        resolve_ingestion_discovery_options(
+            ingestion=IngestionConfig(max_files=0)
+        )
 
 
 def test_split_supported_paths_partitions_by_extension(tmp_path: Path) -> None:
