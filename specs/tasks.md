@@ -416,7 +416,7 @@ Done criteria:
 3. Ingestion behavior is deterministic under fixed config.
 
 ### T-011 Implement Text Extraction
-Status: [ ]
+Status: [x]
 
 Objective:
 Extract normalized text from txt and PDF files.
