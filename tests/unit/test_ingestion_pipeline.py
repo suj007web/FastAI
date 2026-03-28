@@ -95,6 +95,7 @@ class _FakeVectorAdapter:
     def __init__(self) -> None:
         self.namespaces: list[str] = []
         self.embeddings: list[EmbeddingRecord] = []
+        self.deleted_namespaces: list[str] = []
 
     def upsert(self, namespace: str, embeddings: tuple[EmbeddingRecord, ...]) -> None:
         self.namespaces.append(namespace)
@@ -114,6 +115,7 @@ class _FakeVectorAdapter:
         return 0
 
     def delete_namespace(self, namespace: str) -> int:
+        self.deleted_namespaces.append(namespace)
         return 0
 
 
@@ -167,6 +169,7 @@ def test_ingest_path_indexes_txt_and_pdf_end_to_end(tmp_path: Path) -> None:
     assert len(chunk_repo.items) == summary.chunks
     assert len(embedding_repo.items) == summary.embeddings
     assert vector_adapter.namespaces == ["default"]
+    assert vector_adapter.deleted_namespaces == ["default"]
     assert any(
         isinstance(embedding.metadata.get("text"), str) and embedding.metadata.get("text")
         for embedding in embedding_repo.items.values()

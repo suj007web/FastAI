@@ -399,3 +399,72 @@ def test_sdk_route_level_retrieval_overrides_are_forwarded(monkeypatch: pytest.M
     assert captured["num_candidates"] == 80
     assert captured["dedupe_strategy"] == "document"
     assert captured["source_paths"] == ("docs/a.txt",)
+
+
+def test_sdk_ask_retries_retrieval_until_candidates_found(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sdk = FastAI()
+    calls = {"count": 0}
+
+    def flaky_retrieve(
+        query: str,
+        *,
+        top_k: int | None = None,
+        min_score: float | None = None,
+        dedupe_strategy: str = "chunk",
+        source_paths: tuple[str, ...] | None = None,
+        num_candidates: int | None = None,
+    ) -> tuple[RetrievedChunkCandidate, ...]:
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RuntimeError("transient")
+        if calls["count"] == 2:
+            return ()
+        return (
+            RetrievedChunkCandidate(
+                chunk_id="chunk-1",
+                embedding_id="emb-1",
+                score=0.9,
+                metadata={"text": "source text", "source_path": "docs/a.txt"},
+            ),
+        )
+
+    monkeypatch.setattr(sdk, "retrieve", flaky_retrieve)
+    monkeypatch.setattr(
+        sdk,
+        "build_context",
+        lambda *args, **kwargs: ContextBuildResult(
+            context="source text",
+            sources=(
+                ContextSource(
+                    id="chunk-1",
+                    text="source text",
+                    metadata={"source_path": "docs/a.txt"},
+                ),
+            ),
+            token_count=2,
+        ),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "build_prompt",
+        lambda *args, **kwargs: PromptBuildResult(final_prompt="prompt", sections=()),
+    )
+    monkeypatch.setattr(
+        sdk,
+        "generate",
+        lambda *args, **kwargs: GenerationResult(
+            text="grounded",
+            model="gpt-4.1-mini",
+            provider="openai",
+        ),
+    )
+
+    response = sdk.ask_payload(AskRequest(query="hello"))
+
+    assert response.answer == "grounded"
+    assert len(response.sources) == 1
+    assert calls["count"] >= 3
+
+

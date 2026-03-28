@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Header, HTTPException
 
-from .schemas import AskRequest, AskResponse
+from .schemas import AskRequest, AskResponse, IngestRequest, IngestResponse
 
 api_router = APIRouter()
 API_KEY_HEADER = "X-API-Key"
@@ -20,12 +20,41 @@ def ask(
     return _run_ask(payload)
 
 
+@api_router.post("/ingest", response_model=IngestResponse)
+def ingest(
+    payload: IngestRequest | None = None,
+    x_api_key: str | None = Header(default=None, alias=API_KEY_HEADER),
+) -> IngestResponse:
+    """Run ingestion for the requested path (defaults to docs)."""
+    _enforce_auth_mode(x_api_key)
+    request_payload = payload or IngestRequest()
+    return _run_ingest(request_payload)
+
+
 def _run_ask(payload: AskRequest) -> AskResponse:
     """Internal ask executor extracted for easy test patching."""
     from ...sdk import FastAI
 
     sdk = FastAI.from_env()
     return sdk.ask_payload(payload)
+
+
+def _run_ingest(payload: IngestRequest) -> IngestResponse:
+    """Internal ingest executor extracted for easy test patching."""
+    from ...sdk import FastAI
+
+    sdk = FastAI.from_env()
+    summary = sdk.add_data(payload.path)
+    return IngestResponse(
+        status="ok",
+        path=payload.path,
+        processed=summary.processed,
+        skipped=summary.skipped,
+        failed=summary.failed,
+        documents=summary.documents,
+        chunks=summary.chunks,
+        embeddings=summary.embeddings,
+    )
 
 
 def _enforce_auth_mode(provided_api_key: str | None) -> None:

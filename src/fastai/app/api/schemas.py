@@ -48,6 +48,25 @@ class AskResponse(BaseModel):
     debug: DebugPayload | None = None
 
 
+class IngestRequest(BaseModel):
+    """Ingestion trigger payload."""
+
+    path: str = Field(default="docs", min_length=1, max_length=2048)
+
+
+class IngestResponse(BaseModel):
+    """Ingestion summary payload."""
+
+    status: str
+    path: str
+    processed: int
+    skipped: int
+    failed: int
+    documents: int
+    chunks: int
+    embeddings: int
+
+
 class ErrorResponse(BaseModel):
     """Stable error response shape exposed over HTTP."""
 

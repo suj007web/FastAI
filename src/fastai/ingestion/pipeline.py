@@ -67,6 +67,7 @@ def ingest_path(
     vector_adapter: VectorStoreAdapter,
     embedding_adapter: EmbeddingAdapter,
     persist_embeddings_locally: bool,
+    replace_namespace: bool = True,
 ) -> IngestionSummary:
     """Run discovery -> extraction -> chunking -> embedding -> persistence."""
     discovery_options = resolve_ingestion_discovery_options(ingestion_config)
@@ -175,6 +176,9 @@ def ingest_path(
                 metadata=metadata,
             )
         )
+
+    if replace_namespace:
+        vector_adapter.delete_namespace(namespace)
 
     if persist_embeddings_locally:
         embedding_repo.upsert_many(tuple(embeddings))

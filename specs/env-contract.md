@@ -39,10 +39,6 @@ Defines all environment variables required or supported by FastAI MVP.
 | FASTAI_INGESTION_EXCLUDE_GLOBS | No | - | **/.git/**,**/node_modules/** | Optional exclude patterns (comma-separated). |
 | FASTAI_INGESTION_FAILURE_POLICY | No | continue | fail_fast | continue or fail_fast for per-file errors. |
 | FASTAI_INGESTION_DEDUPE_MODE | No | checksum_path | checksum_only | Deduping policy for repeated ingestion. |
-| FASTAI_INGESTION_WATCH_DOCS | No | false | true | Enable docs folder change watcher that auto-runs ingestion. |
-| FASTAI_INGESTION_WATCH_PATH | No | docs | knowledge | Folder watched for file additions/changes/deletions. |
-| FASTAI_INGESTION_WATCH_INTERVAL_SEC | No | 2.0 | 1.0 | Polling interval (seconds) for docs watcher. |
-| FASTAI_INGESTION_WATCH_DEBOUNCE_SEC | No | 1.0 | 0.5 | Minimum interval (seconds) between auto-ingestion runs. |
 | FASTAI_LLM_PROVIDER | No | openai | openai | Active provider key for adapter routing. |
 | FASTAI_LLM_MODEL | Yes | - | gpt-4.1-mini | Generation model name (primary model choice). |
 | FASTAI_EMBEDDING_MODEL | No | text-embedding-3-small | text-embedding-3-small | Embedding model name. |
@@ -82,9 +78,6 @@ Defines all environment variables required or supported by FastAI MVP.
 9. FASTAI_INGESTION_FAILURE_POLICY=continue skips failed files and reports counts; fail_fast aborts ingestion immediately.
 10. FASTAI_INGESTION_DEDUPE_MODE=checksum_path dedupes by resolved path identity.
 11. FASTAI_INGESTION_DEDUPE_MODE=checksum_only dedupes by file content hash.
-12. FASTAI_INGESTION_WATCH_DOCS=true enables a polling watcher that triggers add_data when docs files are added, changed, or deleted.
-13. FASTAI_INGESTION_WATCH_PATH sets the watched root folder and defaults to docs.
-14. FASTAI_INGESTION_WATCH_INTERVAL_SEC and FASTAI_INGESTION_WATCH_DEBOUNCE_SEC tune polling frequency and trigger burst control.
 
 ## Minimal Onboarding Contract
 For default developer onboarding, change only:

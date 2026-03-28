@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, cast
@@ -467,18 +468,14 @@ class FastAI:
 
         dedupe_strategy: RetrievalDedupeStrategy = payload.dedupe_strategy or "chunk"
 
-        candidates: tuple[RetrievedChunkCandidate, ...] = ()
-        try:
-            candidates = self.retrieve(
-                query,
-                top_k=payload.top_k,
-                min_score=payload.min_score,
-                dedupe_strategy=dedupe_strategy,
-                source_paths=payload.source_paths,
-                num_candidates=payload.num_candidates,
-            )
-        except Exception:
-            candidates = ()
+        candidates = self._retrieve_with_retries(
+            query=query,
+            top_k=payload.top_k,
+            min_score=payload.min_score,
+            dedupe_strategy=dedupe_strategy,
+            source_paths=payload.source_paths,
+            num_candidates=payload.num_candidates,
+        )
 
         context_result = self.build_context(
             candidates,
@@ -524,6 +521,42 @@ class FastAI:
             )
 
         return AskResponse(answer=answer_text, sources=sources, debug=debug_payload)
+
+    def _retrieve_with_retries(
+        self,
+        *,
+        query: str,
+        top_k: int | None,
+        min_score: float | None,
+        dedupe_strategy: RetrievalDedupeStrategy,
+        source_paths: tuple[str, ...] | None,
+        num_candidates: int | None,
+    ) -> tuple[RetrievedChunkCandidate, ...]:
+        # Retry empty/error retrievals briefly to absorb eventual-consistency windows
+        # immediately after an ingestion run.
+        max_attempts = 4
+        backoff_sec = 0.35
+
+        for attempt in range(max_attempts):
+            try:
+                candidates = self.retrieve(
+                    query,
+                    top_k=top_k,
+                    min_score=min_score,
+                    dedupe_strategy=dedupe_strategy,
+                    source_paths=source_paths,
+                    num_candidates=num_candidates,
+                )
+                if candidates:
+                    return candidates
+            except Exception:
+                candidates = ()
+
+            if attempt < max_attempts - 1:
+                time.sleep(backoff_sec)
+
+        return ()
+
 
 
 def mount_fastai_router(app: FastAPI, *, sdk: FastAI, path: str = "/ai") -> None:
